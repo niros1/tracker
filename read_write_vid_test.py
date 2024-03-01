@@ -25,22 +25,32 @@ def add_text_to_frame2(frame, text, position=(50, 50), font_scale=1, font_color=
     cv2.putText(frame, text, position, font, font_scale, font_color, thickness)
     return frame
 # Open the input video
-cap = cv2.VideoCapture('input/basketball.mp4')
+cap = cv2.VideoCapture('../../gdino/GroundingDINO/input/basketball.mp4')
 
 # Get video properties
 fps = cap.get(cv2.CAP_PROP_FPS)
 width  = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
 height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 fourcc = cv2.VideoWriter_fourcc(*'X264')
+fourcc = cv2.VideoWriter_fourcc(*'MP4V')
 print(fps, width, height, fourcc)
 
 # Create a VideoWriter object
-out = cv2.VideoWriter('./_test_output.mp4', fourcc, fps, (width, height))
+out = cv2.VideoWriter('./_test_output_short.mp4', fourcc, fps, (width, height))
 
 print("OK")
+if not cap.isOpened():
+    print("Error: Could not open video.")
+    exit()
 
+if not out.isOpened():
+    print("Error: Could not open output video.")
+    exit()
+
+
+counter = 0
 while cap.isOpened():
-    print(".",end="", flush=True)
+    print(f'\rCount: {counter}', end='', flush=True)
     ret, frame = cap.read()
     if not ret:
         break
@@ -50,6 +60,10 @@ while cap.isOpened():
 
     # Write the frame to the output video
     out.write(frame)
+    if counter > 100:
+        break
+
+    counter += 1
 
 # Release everything
 cap.release()
