@@ -118,24 +118,22 @@ def add_text_to_frame2(frame, text, position=(50, 50), font_scale=1, font_color=
     font = cv2.FONT_HERSHEY_SIMPLEX
     if is_iterable(text):
         for line in text:
-            cv2.putText(frame, line, position, font, font_scale, font_color, thickness)
-            # position = (position[0], position[1] + 50)
-        # text = " ".join(text)
+            cv2.putText(frame, f"{line}", position, font, font_scale, font_color, thickness)
+            position = (position[0], position[1] + 30)
     else:
         cv2.putText(frame, text, position, font, font_scale, font_color, thickness)
     return frame
 
-def write_frame(vid_writer, source_frame, history: Stack,  tracking_data: TrackingFrameData, logits, phrases):
-    annotated_frame = annotate(image_source=source_frame, boxes=tracking_data.boxes, logits=logits, phrases=phrases)
-    # h, w, _ = source_frame.shape
-    # boxes = boxes * torch.Tensor([w, h, w, h])
-    # xyxy = box_convert(boxes=boxes, in_fmt="cxcywh", out_fmt="xyxy").numpy()
-    x = tracking_data.cordinates[0][0]
-    y = tracking_data.cordinates[0][1]
+def write_frame(vid_writer, source_frame, history: Stack,  tracking_data: TrackingFrameData, x, y,  logits, phrases):
+    # annotated_frame = annotate(image_source=source_frame, boxes=tracking_data.boxes, logits=logits, phrases=phrases)
+
+    # y = 800
+    # x = 500
+
     zoom_frame = zoom_at(source_frame, 2, coord=(x, y))
 
-    print("Zoom ->>>>>", (x, y))
+    print(f"Frame {tracking_data.index}->>>>>", (x, y))
     
     add_text_to_frame2(zoom_frame, history, position=(50, 150))
     vid_writer.write(zoom_frame)
-    return f"Zoom at: {x}, {y} ---- phrases: {phrases}"
+    return f"Frame {tracking_data.index} - Zoom at: {x}, {y} ---- phrases: {phrases}"

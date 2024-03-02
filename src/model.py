@@ -15,6 +15,7 @@ class TrackingFrameData(BaseModel):
     class Config:
         arbitrary_types_allowed = True
     index: int
+    source_index: int
     boxes: torch.Tensor # Bounding boxes returned from gdino
     logits: torch.Tensor
     phrases: typing.List[str]
@@ -22,7 +23,11 @@ class TrackingFrameData(BaseModel):
 
 
 class TrackinfVideoData(BaseModel):
+    class Config:
+        arbitrary_types_allowed = True
     all: list[TrackingFrameData] = []
+    X: numpy.ndarray = None # X smoothed cordinates
+    Y: numpy.ndarray = None # X smoothed cordinates
 
 
 class Stack:

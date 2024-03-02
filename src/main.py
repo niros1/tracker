@@ -2,6 +2,7 @@
 import os
 import pickle
 import cv2
+import numpy as np
 from tqdm import tqdm
 from groundingdino.util.inference import load_model, load_image, predict, annotate
 import torch
@@ -62,32 +63,52 @@ def get_tracking_data(model, input_video_path, vid_props: VideoProperties, frame
             vid_data.all.append(
                 TrackingFrameData(
                     index=counter,
+                    source_index=previouse_state["counter"],
                     boxes=previouse_state["boxes"], 
                     logits=previouse_state["logits"],
                     phrases=previouse_state["phrases"],
                     cordinates=previouse_state["cordinates"],
                 )
             )
+            counter += 1
             continue
 
         xyxy_cord = box_convert(boxes=cboxes, in_fmt="cxcywh", out_fmt="xyxy").numpy()
-        vid_data.all.append(
-            TrackingFrameData(
-                index=counter,
-                boxes= boxes,
-                logits=logits,
-                phrases=phrases,
-                cordinates=xyxy_cord
-            )
+        xyxy_cord[0]
+        t_data = TrackingFrameData(
+            index=counter,
+            source_index=counter,
+            boxes= boxes[0].unsqueeze(0),
+            logits=logits[0].unsqueeze(0),
+            phrases=[phrases[0]],
+            cordinates=xyxy_cord[0]
         )
+        vid_data.all.append(t_data)
         previouse_state = {
-            "boxes": boxes,
-            "logits": logits,
-            "phrases": phrases,
-            "cordinates":xyxy_cord
+            "counter": counter,
+            "boxes": t_data.boxes,
+            "logits": t_data.logits,
+            "phrases": t_data.phrases,
+            "cordinates": t_data.cordinates
         }
         counter += 1
     return vid_data
+
+def smooth_data(data, window_size=3, use_median=False):
+    # Pad the data at the start and end so we can calculate the moving average/median at the edges
+    padding = window_size // 2
+    data = np.pad(data, (padding, padding), 'edge')
+
+    smoothed_data = []
+    for i in range(padding, len(data) - padding):
+        window = data[i - padding : i + padding + 1]
+        if use_median:
+            smoothed_value = np.median(window)
+        else:
+            smoothed_value = np.mean(window)
+        smoothed_data.append(smoothed_value)
+
+    return np.array(smoothed_data)
 
 def main():
     imput_video_path = "input/basketball.mp4"
@@ -112,16 +133,22 @@ def main():
         pickle.dump(tracking_data, open("output/tracking_data.pkl", "wb"))
     else:
         tracking_data = pickle.load(open("output/tracking_data.pkl", "rb"))
+    
+    X = [c.cordinates[0] for c in tracking_data.all]
+    tracking_data.X = smooth_data(X, window_size=100, use_median=True)
+    Y = [c.cordinates[1] for c in tracking_data.all]
+    tracking_data.Y = smooth_data(Y, window_size=100, use_median=True)
 
-    print(tracking_data)
+
+    # print(tracking_data)
     frame_iterator = iter(generate_frames(video_file=imput_video_path, frames_limit=frames_limit))
     # frames_data = []
     counter = 0
     # previouse_state = {}
-    history = Stack(15)
+    history = Stack(30)
     for frame in tqdm(frame_iterator, total=5):
         track_data = tracking_data.all[counter]
-        doc_str = write_frame(new_video, frame, history,  track_data, track_data.logits, track_data.phrases)
+        doc_str = write_frame(new_video, frame, history,  track_data,tracking_data.X[counter], tracking_data.Y[counter],track_data.logits, track_data.phrases)
         history.push(doc_str)
         counter += 1
  
