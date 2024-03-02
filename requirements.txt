@@ -1,0 +1,11 @@
+torch
+torchvision
+transformers
+addict
+yapf
+timm
+numpy
+opencv-python
+supervision
+pycocotools
+pydantic
