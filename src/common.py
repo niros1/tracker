@@ -10,7 +10,7 @@ from PIL import Image
 import groundingdino.datasets.transforms as T
 from torchvision.ops import box_convert
 from groundingdino.util.inference import load_model, load_image, predict, annotate
-from model import Stack
+from model import Stack, TrackingFrameData
 
 def is_iterable(obj):
     try:
@@ -125,16 +125,17 @@ def add_text_to_frame2(frame, text, position=(50, 50), font_scale=1, font_color=
         cv2.putText(frame, text, position, font, font_scale, font_color, thickness)
     return frame
 
-def write_frame(vid_writer, source_frame, history: Stack,  boxes, logits, phrases):
-    annotated_frame = annotate(image_source=source_frame, boxes=boxes, logits=logits, phrases=phrases)
-    h, w, _ = source_frame.shape
-    boxes = boxes * torch.Tensor([w, h, w, h])
-    xyxy = box_convert(boxes=boxes, in_fmt="cxcywh", out_fmt="xyxy").numpy()
-    x = xyxy[0][0]
-    y = xyxy[0][1]
+def write_frame(vid_writer, source_frame, history: Stack,  tracking_data: TrackingFrameData, logits, phrases):
+    annotated_frame = annotate(image_source=source_frame, boxes=tracking_data.boxes, logits=logits, phrases=phrases)
+    # h, w, _ = source_frame.shape
+    # boxes = boxes * torch.Tensor([w, h, w, h])
+    # xyxy = box_convert(boxes=boxes, in_fmt="cxcywh", out_fmt="xyxy").numpy()
+    x = tracking_data.cordinates[0][0]
+    y = tracking_data.cordinates[0][1]
     zoom_frame = zoom_at(source_frame, 2, coord=(x, y))
 
     print("Zoom ->>>>>", (x, y))
-    history.push(f"Zoom at: {x}, {y} ---- phrases: {phrases}")
+    
     add_text_to_frame2(zoom_frame, history, position=(50, 150))
     vid_writer.write(zoom_frame)
+    return f"Zoom at: {x}, {y} ---- phrases: {phrases}"

@@ -1,5 +1,6 @@
 import typing
 
+import numpy
 from torch import tensor
 import torch
 from pydantic import BaseModel
@@ -14,9 +15,10 @@ class TrackingFrameData(BaseModel):
     class Config:
         arbitrary_types_allowed = True
     index: int
-    boxes: torch.Tensor
+    boxes: torch.Tensor # Bounding boxes returned from gdino
     logits: torch.Tensor
     phrases: typing.List[str]
+    cordinates: typing.Optional[numpy.ndarray] = None # Real frame cordinates, respected to the frame size. based on boxes
 
 
 class TrackinfVideoData(BaseModel):

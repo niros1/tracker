@@ -38,7 +38,7 @@ def extract_video_info(video_file_path) -> VideoProperties:
     return None
     
 
-def get_tracking_data(model, input_video_path, frames_limit=120) -> TrackinfVideoData:
+def get_tracking_data(model, input_video_path, vid_props: VideoProperties, frames_limit=120) -> TrackinfVideoData:
     frame_iterator = iter(generate_frames(video_file=input_video_path, frames_limit=frames_limit))
     counter = 0
     previouse_state = {}
@@ -47,6 +47,7 @@ def get_tracking_data(model, input_video_path, frames_limit=120) -> TrackinfVide
     for frame in tqdm(frame_iterator, total=5):
         # print(frame)
         # print(f'\rCount: {counter}', end='', flush=True)
+        
         transformed_array = convert_ndarray(frame)
         boxes, logits, phrases = predict(
             model=model,
@@ -55,35 +56,36 @@ def get_tracking_data(model, input_video_path, frames_limit=120) -> TrackinfVide
             box_threshold=BOX_TRESHOLD,
             text_threshold=TEXT_TRESHOLD
         )
-        # print(boxes, logits, phrases)
-
+        cboxes = boxes * torch.Tensor([vid_props.width, vid_props.height, vid_props.width, vid_props.height])
         # Can't detect any object
         if boxes.shape[0] == 0:
             vid_data.all.append(
                 TrackingFrameData(
                     index=counter,
-                    boxes=previouse_state["boxes"],
+                    boxes=previouse_state["boxes"], 
                     logits=previouse_state["logits"],
-                    phrases=previouse_state["phrases"]
+                    phrases=previouse_state["phrases"],
+                    cordinates=previouse_state["cordinates"],
                 )
             )
-            # write_frame(new_video, frame, history, previouse_state["boxes"], previouse_state["logits"], previouse_state["phrases"])
             continue
 
+        xyxy_cord = box_convert(boxes=cboxes, in_fmt="cxcywh", out_fmt="xyxy").numpy()
         vid_data.all.append(
             TrackingFrameData(
                 index=counter,
                 boxes= boxes,
                 logits=logits,
-                phrases=phrases
+                phrases=phrases,
+                cordinates=xyxy_cord
             )
         )
         previouse_state = {
             "boxes": boxes,
             "logits": logits,
-            "phrases": phrases
+            "phrases": phrases,
+            "cordinates":xyxy_cord
         }
-        # write_frame(new_video, frame, history,  boxes, logits, phrases)
         counter += 1
     return vid_data
 
@@ -92,6 +94,7 @@ def main():
     output_video_path = "output/new_video1.mp4"
     model = load_model("groundingdino/config/GroundingDINO_SwinT_OGC.py", "weights/groundingdino_swint_ogc.pth")
     vid_props = extract_video_info(imput_video_path)
+    frames_limit = 120
 
 
     try:
@@ -105,46 +108,23 @@ def main():
         exit()
 
     if not os.path.exists("output/tracking_data.pkl"):
-        tracking_data = get_tracking_data(model, imput_video_path, frames_limit=120)
+        tracking_data = get_tracking_data(model, imput_video_path, vid_props, frames_limit=frames_limit)
         pickle.dump(tracking_data, open("output/tracking_data.pkl", "wb"))
     else:
         tracking_data = pickle.load(open("output/tracking_data.pkl", "rb"))
 
     print(tracking_data)
-    # frame_iterator = iter(generate_frames(video_file=imput_video_path, frames_limit=120))
+    frame_iterator = iter(generate_frames(video_file=imput_video_path, frames_limit=frames_limit))
     # frames_data = []
-    # counter = 0
+    counter = 0
     # previouse_state = {}
-    # history = Stack(15)
-    # for frame in tqdm(frame_iterator, total=5):
-    #     # print(frame)
-    #     print(f'\rCount: {counter}', end='', flush=True)
-        
-    #     transformed_array = convert_ndarray(frame)
-
-
-    #     boxes, logits, phrases = predict(
-    #         model=model,
-    #         image=transformed_array,
-    #         caption="basketball",
-    #         box_threshold=BOX_TRESHOLD,
-    #         text_threshold=TEXT_TRESHOLD
-    #     )
-    #     # print(boxes, logits, phrases)
-
-    #     # Can't detect any object
-    #     if boxes.shape[0] == 0:
-    #         write_frame(new_video, frame, history, previouse_state["boxes"], previouse_state["logits"], previouse_state["phrases"])
-    #         continue
-
-    #     previouse_state = {
-    #         "boxes": boxes,
-    #         "logits": logits,
-    #         "phrases": phrases
-    #     }
-        # write_frame(new_video, frame, history,  boxes, logits, phrases)
-        # counter += 1
-# 
+    history = Stack(15)
+    for frame in tqdm(frame_iterator, total=5):
+        track_data = tracking_data.all[counter]
+        doc_str = write_frame(new_video, frame, history,  track_data, track_data.logits, track_data.phrases)
+        history.push(doc_str)
+        counter += 1
+ 
     print("Releasing video")
     new_video.release()
 
