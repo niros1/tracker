@@ -1,4 +1,5 @@
 #%% 1
+import argparse
 import os
 import pickle
 import cv2
@@ -110,7 +111,7 @@ def smooth_data(data, window_size=3, use_median=False):
 
     return np.array(smoothed_data)
 
-def main():
+def main(args):
     imput_video_path = "input/basketball.mp4"
     output_video_path = "output/new_video1.mp4"
     model = load_model("groundingdino/config/GroundingDINO_SwinT_OGC.py", "weights/groundingdino_swint_ogc.pth")
@@ -128,7 +129,7 @@ def main():
         print("Error: Could not open output video.")
         exit()
 
-    if not os.path.exists("output/tracking_data.pkl"):
+    if args.force_create_tracking or not os.path.exists("output/tracking_data.pkl"):
         tracking_data = get_tracking_data(model, imput_video_path, vid_props, frames_limit=frames_limit)
         pickle.dump(tracking_data, open("output/tracking_data.pkl", "wb"))
     else:
@@ -158,4 +159,16 @@ def main():
 
 #%%
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(
+        description="MLFlow console"
+    )
+    parser.add_argument(
+        "--force-create-tracking",
+        action="store_true",
+        default=os.getenv(
+            "FORCE_CREATE_TRACK_DATA",
+            False,
+        ),
+    )
+    args = parser.parse_args()
+    main(args)
