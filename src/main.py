@@ -1,5 +1,6 @@
 #%% 1
 import argparse
+from ast import arg
 import os
 import pickle
 import cv2
@@ -40,15 +41,27 @@ def extract_video_info(video_file_path) -> VideoProperties:
     return None
     
 
-def get_tracking_data(model, input_video_path, vid_props: VideoProperties, frames_limit=120) -> TrackinfVideoData:
-    frame_iterator = iter(generate_frames(video_file=input_video_path, frames_limit=frames_limit))
+def get_tracking_data(model, input_video_path, vid_props: VideoProperties, frames_limit=120, accuracy=40) -> TrackinfVideoData:
+    frame_iterator = iter(generate_frames(video_file=input_video_path, frames_limit=frames_limit, accuracy=accuracy))
     counter = 0
     previouse_state = {}
     # history = Stack(15)
     vid_data = TrackinfVideoData()
-    for frame in tqdm(frame_iterator, total=5):
-        # print(frame)
-        # print(f'\rCount: {counter}', end='', flush=True)
+    for frame in tqdm(frame_iterator, desc="get_tracking_data", total=None):
+        if counter % accuracy != 0:
+            # Use the data of the last frame which was processed
+            vid_data.all.append(
+                TrackingFrameData(
+                    index=counter,
+                    source_index=previouse_state["counter"],
+                    boxes=previouse_state["boxes"], 
+                    logits=previouse_state["logits"],
+                    phrases=previouse_state["phrases"],
+                    cordinates=previouse_state["cordinates"],
+                )
+            )
+            counter += 1
+            continue
         
         transformed_array = convert_ndarray(frame)
         boxes, logits, phrases = predict(
@@ -59,7 +72,7 @@ def get_tracking_data(model, input_video_path, vid_props: VideoProperties, frame
             text_threshold=TEXT_TRESHOLD
         )
         cboxes = boxes * torch.Tensor([vid_props.width, vid_props.height, vid_props.width, vid_props.height])
-        # Can't detect any object
+        # Can't detect any object, use the previous frame data
         if boxes.shape[0] == 0:
             vid_data.all.append(
                 TrackingFrameData(
@@ -112,49 +125,65 @@ def smooth_data(data, window_size=3, use_median=False):
     return np.array(smoothed_data)
 
 def main(args):
-    imput_video_path = "input/basketball.mp4"
-    output_video_path = "output/new_video1.mp4"
-    model = load_model("groundingdino/config/GroundingDINO_SwinT_OGC.py", "weights/groundingdino_swint_ogc.pth")
-    vid_props = extract_video_info(imput_video_path)
-    frames_limit = 120
-
-
-    try:
-        os.remove(output_video_path)
-    except:
-        pass
-
-    new_video = cv2.VideoWriter(output_video_path, mp4v_fourcc, vid_props.fps, (vid_props.width, vid_props.height))
-    if not new_video.isOpened():
-        print("Error: Could not open output video.")
+    if args.process_folder == "" and args.process_file == "":
+        print("No file or folder to process")
         exit()
 
-    if args.force_create_tracking or not os.path.exists("output/tracking_data.pkl"):
-        tracking_data = get_tracking_data(model, imput_video_path, vid_props, frames_limit=frames_limit)
-        pickle.dump(tracking_data, open("output/tracking_data.pkl", "wb"))
-    else:
-        tracking_data = pickle.load(open("output/tracking_data.pkl", "rb"))
+    if args.process_folder != "":
+        folder_name = args.process_folder
+    if args.process_file != "":
+        file_path = args.process_file
     
+    model = load_model("groundingdino/config/GroundingDINO_SwinT_OGC.py", "weights/groundingdino_swint_ogc.pth")
+    process_video(args, file_path, model)
+
+def process_video(args, file_path, model):
+    vid_props = extract_video_info(file_path)
+    tracking_frames_limit = args.tracking_frames_limit
+    
+    file_name_no_ext = os.path.splitext(os.path.basename(file_path))[0]
+
+    pickle_name = f"output/tracking_data_{file_name_no_ext}.pkl"
+
+    if args.force_create_tracking or not os.path.exists(pickle_name):
+        tracking_data = get_tracking_data(model, file_path, vid_props, frames_limit=tracking_frames_limit)
+        pickle.dump(tracking_data, open(pickle_name, "wb"))
+    else:
+        tracking_data = pickle.load(open(pickle_name, "rb"))
+    
+    # Traking data manipulation
     X = [c.cordinates[0] for c in tracking_data.all]
-    tracking_data.X = smooth_data(X, window_size=100, use_median=True)
+    tracking_data.X = smooth_data(X, window_size=100, use_median=False)
     Y = [c.cordinates[1] for c in tracking_data.all]
-    tracking_data.Y = smooth_data(Y, window_size=100, use_median=True)
+    tracking_data.Y = smooth_data(Y, window_size=100, use_median=False)
 
-
-    # print(tracking_data)
-    frame_iterator = iter(generate_frames(video_file=imput_video_path, frames_limit=frames_limit))
-    # frames_data = []
+    # Create output video
+    out_vid_len_frames = args.out_vid_len
+    output_video_path = f"output/video_{file_name_no_ext}_{out_vid_len_frames}.mp4"
+    output_video = get_video_writer(output_video_path, vid_props)
+    
+    frame_iterator = iter(generate_frames(video_file=file_path, frames_limit=out_vid_len_frames))
     counter = 0
-    # previouse_state = {}
     history = Stack(30)
     for frame in tqdm(frame_iterator, total=5):
         track_data = tracking_data.all[counter]
-        doc_str = write_frame(new_video, frame, history,  track_data,tracking_data.X[counter], tracking_data.Y[counter],track_data.logits, track_data.phrases)
+        doc_str = write_frame(output_video, frame, history,  track_data,tracking_data.X[counter], tracking_data.Y[counter],track_data.logits, track_data.phrases)
         history.push(doc_str)
         counter += 1
  
     print("Releasing video")
-    new_video.release()
+    output_video.release()
+
+def get_video_writer(output_video_path, vid_props, fourcc=mp4v_fourcc):
+    try:
+        os.remove(output_video_path)
+    except:
+        pass
+    output_video = cv2.VideoWriter(output_video_path, fourcc, vid_props.fps, (vid_props.width, vid_props.height))
+    if not output_video.isOpened():
+        print("Error: Could not open output video.")
+        exit()
+    return output_video
 
 
 #%%
@@ -170,5 +199,46 @@ if __name__ == "__main__":
             False,
         ),
     )
+
+    parser.add_argument(
+        "--process-folder",
+        action="store",
+        default=os.getenv(
+            "PROCESSES_FOLDER",
+            "",
+        ),
+    )
+
+    parser.add_argument(
+        "--process-file",
+        action="store",
+        default=os.getenv(
+            "PROCESSES_FILE",
+            "",
+        ),
+    )
+
+    parser.add_argument(
+        "--out-vid-len",
+        action="store",
+        type=int,
+        default=os.getenv(
+            "PROCESSES_FILE",
+            1000,
+        ),
+    )
+
+    parser.add_argument(
+        "--tracking-frames-limit",
+        action="store",
+        type=int,
+        default=os.getenv(
+            "PROCESSES_FILE",
+            1200, # 0 means no limit
+        ),
+    )
+
     args = parser.parse_args()
+
+    print(args)
     main(args)

@@ -60,17 +60,36 @@ def extract_frames(video_path, output_folder, frames_limit=100, skip=0):
     video.release()
     return files
 
-def generate_frames(video_file: str, frames_limit=10) -> Generator[np.ndarray, None, None]:
+
+def generate_frames(video_file: str, frames_limit=10, accuracy=0) -> Generator[np.ndarray, None, None]:
+    import time
     """
         yield each frame as byte array
     """
     video = cv2.VideoCapture(video_file)
     frame_count = 0
 
+    start_time = time.time()
     while video.isOpened():
-        success, frame = video.read()
 
-        if not ((frames_limit > 0 and frame_count < frames_limit) or (frames_limit == 0 and success is True)):
+        # Skip frame (performance optimizztion)
+        if accuracy != 0 and frame_count % accuracy != 0:
+            # print("before grab time:", time.time() - start_time)
+
+            success = video.grab()
+            # print("grab time:", time.time() - start_time)
+            frame = None
+        else:
+            # print("before read time:", time.time() - start_time)
+
+            success, frame = video.read()
+            # print("read time:", time.time() - start_time, frame)
+        
+    
+        if (
+            (frames_limit > 0 and frame_count >= frames_limit) or 
+            (frames_limit == 0 and success is False)
+        ):
             break
 
         yield frame
@@ -134,6 +153,6 @@ def write_frame(vid_writer, source_frame, history: Stack,  tracking_data: Tracki
 
     print(f"Frame {tracking_data.index}->>>>>", (x, y))
     
-    add_text_to_frame2(zoom_frame, history, position=(50, 150))
+    # add_text_to_frame2(zoom_frame, history, position=(50, 150))
     vid_writer.write(zoom_frame)
     return f"Frame {tracking_data.index} - Zoom at: {x}, {y} ---- phrases: {phrases}"
