@@ -27,6 +27,10 @@ class TrackingFrameData(BaseModel):
     )
 
     @property
+    def logit_trashold(self) -> float:
+        return 0.5
+
+    @property
     def top_score_index(self) -> int | None:
         """
         Returns the index of the top score founded by the vision model
@@ -52,6 +56,9 @@ class TrackingFrameData(BaseModel):
     @property
     def cordinate(self):
         assert self.cordinates is not None
+        if bool(self.logit[0] < self.logit_trashold):
+            return tensor([1000, 1200, 0, 0])
+        # if(self.logit)
         return self.cordinates[self.top_score_index]
 
 
