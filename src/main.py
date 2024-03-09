@@ -199,9 +199,9 @@ def process_video(args, file_path, model, vid_props, tracking_data: TrackinfVide
     file_name_no_ext = os.path.splitext(os.path.basename(file_path))[0]
     # Traking data manipulation
     X = [c.cordinate[0] for c in tracking_data.all]
-    tracking_data.X = smooth_data(X, window_size=100, use_median=True)
+    tracking_data.X = smooth_data(X, window_size=300, use_median=False)
     Y = [c.cordinate[1] for c in tracking_data.all]
-    tracking_data.Y = smooth_data(Y, window_size=100, use_median=True)
+    tracking_data.Y = smooth_data(Y, window_size=300, use_median=False)
 
     plt.figure()
     plt.subplot(2, 1, 1)
@@ -218,7 +218,7 @@ def process_video(args, file_path, model, vid_props, tracking_data: TrackinfVide
 
     plt.legend()
     plt.savefig(f"output/plot_xy_{file_name_no_ext}.png")
-    exit()
+
     # Create output video
     out_vid_len_frames = args.out_vid_len
     output_video_path = f"output/video_{file_name_no_ext}_{out_vid_len_frames}.mp4"
