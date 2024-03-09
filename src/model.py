@@ -27,21 +27,33 @@ class TrackingFrameData(BaseModel):
     )
 
     @property
+    def top_score_index(self) -> int | None:
+        """
+            Returns the index of the top score founded by the vision model
+        """
+        if self.logits and len(self.logits) > 0:
+            max_index = torch.argmax(self.logits)
+            return int(max_index)
+        else:
+            return 0
+
+    @property
     def box(self):
-        return self.boxes[0].unsqueeze(0)
+        return self.boxes[self.top_score_index].unsqueeze(0)
 
     @property
     def logit(self):
-        return self.logits[0].unsqueeze(0)
+        return self.logits[self.top_score_index].unsqueeze(0)
 
     @property
     def phras(self):
-        return [self.phrases[0]]
+        return [self.phrases[self.top_score_index]]
 
     @property
     def cordinate(self):
         assert self.cordinates is not None
-        return self.cordinates[0]
+        return self.cordinates[self.top_score_index]
+
 
 
 class TrackinfVideoData(BaseModel):

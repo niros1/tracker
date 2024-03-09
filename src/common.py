@@ -1,4 +1,5 @@
 from ast import Tuple
+import os
 import cv2
 from scipy.fftpack import sc_diff
 import matplotlib.pyplot as plt
@@ -70,6 +71,8 @@ def retrieve_frames(
     """
         yield each frame as byte array
     """
+    if not os.path.isfile(video_file):
+        raise FileNotFoundError(f"No such file: '{video_file}'")
     video = cv2.VideoCapture(video_file)
     frame_count = 0
 

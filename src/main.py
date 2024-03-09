@@ -8,7 +8,7 @@ import numpy as np
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 
-# from groundingdino.util.inference import load_model, load_image, predict, annotate
+
 import torch
 from torchvision.ops import box_convert
 
@@ -46,6 +46,8 @@ def extract_video_info(video_file_path) -> VideoProperties | None:
 def get_tracking_data(
     model, input_video_path, vid_props: VideoProperties, frames_limit=120, accuracy=40
 ) -> TrackinfVideoData:
+    from groundingdino.util.inference import predict
+    print(f"Getting tracking data for {input_video_path} with limit {frames_limit} accuracy {accuracy}")
     frame_iterator = iter(
         retrieve_frames(
             video_file=input_video_path, frames_limit=frames_limit, accuracy=accuracy
@@ -83,9 +85,7 @@ def get_tracking_data(
             box_threshold=BOX_TRESHOLD,
             text_threshold=TEXT_TRESHOLD,
         )
-        cboxes = boxes * torch.Tensor(
-            [vid_props.width, vid_props.height, vid_props.width, vid_props.height]
-        )
+        
         # Can't detect any object, use the previous frame data
         if boxes.shape[0] == 0:
             vid_data.all.append(
@@ -101,6 +101,9 @@ def get_tracking_data(
             counter += 1
             continue
 
+        cboxes = boxes * torch.Tensor(
+            [vid_props.width, vid_props.height, vid_props.width, vid_props.height]
+        )
         xyxy_cord = box_convert(boxes=cboxes, in_fmt="cxcywh", out_fmt="xyxy").numpy()
 
         t_data = TrackingFrameData(
@@ -171,25 +174,27 @@ def main(args):
         model = None
     # from groundingdino.util.inference import load_model, load_image, predict, annotate
 
-    process_video(args, file_path, model)
-
-
-def process_video(args, file_path, model):
     vid_props = extract_video_info(file_path)
-    tracking_frames_limit = args.tracking_frames_limit
 
     file_name_no_ext = os.path.splitext(os.path.basename(file_path))[0]
-
     pickle_name = f"output/tracking_data_{file_name_no_ext}.pkl"
-
+    
     if args.force_create_tracking or not os.path.exists(pickle_name):
         tracking_data = get_tracking_data(
-            model, file_path, vid_props, frames_limit=tracking_frames_limit
+            model, file_path, vid_props, frames_limit=args.tracking_frames_limit
         )
         pickle.dump(tracking_data, open(pickle_name, "wb"))
-    else:
-        tracking_data = pickle.load(open(pickle_name, "rb"))
+        
 
+    if args.create_video is True:
+        tracking_data = pickle.load(open(pickle_name, "rb"))
+        process_video(args, file_path, model, vid_props)
+
+
+def process_video(args, file_path, model, vid_props, tracking_data):
+    # vid_props = extract_video_info(file_path)
+    # tracking_frames_limit = args.tracking_frames_limit
+    file_name_no_ext = os.path.splitext(os.path.basename(file_path))[0]
     # Traking data manipulation
     X = [c.cordinate[0] for c in tracking_data.all]
     tracking_data.X = smooth_data(X, window_size=100, use_median=True)
@@ -252,6 +257,15 @@ if __name__ == "__main__":
         action="store_true",
         default=os.getenv(
             "FORCE_CREATE_TRACK_DATA",
+            False,
+        ),
+    )
+
+    parser.add_argument(
+        "--create-video",
+        action="store_true",
+        default=os.getenv(
+            "CREATE_VIDEO",
             False,
         ),
     )
