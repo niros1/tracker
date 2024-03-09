@@ -174,7 +174,7 @@ def write_frame(
 
     zoom_frame = zoom_at(source_frame, 2, coord=(x, y))
 
-    print(f"Frame {tracking_data.index}->>>>>", (x, y))
+    # print(f"Frame {tracking_data.index}->>>>>", (x, y))
 
     # add_text_to_frame2(zoom_frame, history, position=(50, 150))
     vid_writer.write(zoom_frame)
