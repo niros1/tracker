@@ -47,7 +47,10 @@ def get_tracking_data(
     model, input_video_path, vid_props: VideoProperties, frames_limit=120, accuracy=40
 ) -> TrackinfVideoData:
     from groundingdino.util.inference import predict
-    print(f"Getting tracking data for {input_video_path} with limit {frames_limit} accuracy {accuracy}")
+
+    print(
+        f"Getting tracking data for {input_video_path} with limit {frames_limit} accuracy {accuracy}"
+    )
     frame_iterator = iter(
         retrieve_frames(
             video_file=input_video_path, frames_limit=frames_limit, accuracy=accuracy
@@ -85,7 +88,7 @@ def get_tracking_data(
             box_threshold=BOX_TRESHOLD,
             text_threshold=TEXT_TRESHOLD,
         )
-        
+
         # Can't detect any object, use the previous frame data
         if boxes.shape[0] == 0:
             vid_data.all.append(
@@ -178,20 +181,19 @@ def main(args):
 
     file_name_no_ext = os.path.splitext(os.path.basename(file_path))[0]
     pickle_name = f"output/tracking_data_{file_name_no_ext}.pkl"
-    
+
     if args.force_create_tracking or not os.path.exists(pickle_name):
         tracking_data = get_tracking_data(
             model, file_path, vid_props, frames_limit=args.tracking_frames_limit
         )
         pickle.dump(tracking_data, open(pickle_name, "wb"))
-        
 
     if args.create_video is True:
         tracking_data = pickle.load(open(pickle_name, "rb"))
-        process_video(args, file_path, model, vid_props)
+        process_video(args, file_path, model, vid_props, tracking_data)
 
 
-def process_video(args, file_path, model, vid_props, tracking_data):
+def process_video(args, file_path, model, vid_props, tracking_data: TrackinfVideoData):
     # vid_props = extract_video_info(file_path)
     # tracking_frames_limit = args.tracking_frames_limit
     file_name_no_ext = os.path.splitext(os.path.basename(file_path))[0]
@@ -201,11 +203,22 @@ def process_video(args, file_path, model, vid_props, tracking_data):
     Y = [c.cordinate[1] for c in tracking_data.all]
     tracking_data.Y = smooth_data(Y, window_size=100, use_median=True)
 
-    plt.plot(np.arange(len(X)), np.array(X), label="Original")
-    plt.plot(np.arange(len(tracking_data.X)), tracking_data.X, label="Original")
-    plt.legend()
-    plt.savefig(f"output/plot_x_{file_name_no_ext}.png")
+    plt.figure()
+    plt.subplot(2, 1, 1)
+    plt.plot(np.arange(len(X)), np.array(X), label="Original X")
+    plt.plot(np.arange(len(tracking_data.X)), tracking_data.X, label="Smooth X")
+    plt.title("X")
+    # plt.legend()
+    # plt.savefig(f"output/plot_x_{file_name_no_ext}.png")
 
+    plt.subplot(2, 1, 2)
+    plt.plot(np.arange(len(Y)), np.array(Y), label="Original Y")
+    plt.plot(np.arange(len(tracking_data.Y)), tracking_data.Y, label="Smooth Y")
+    plt.title("Y")
+
+    plt.legend()
+    plt.savefig(f"output/plot_xy_{file_name_no_ext}.png")
+    exit()
     # Create output video
     out_vid_len_frames = args.out_vid_len
     output_video_path = f"output/video_{file_name_no_ext}_{out_vid_len_frames}.mp4"
