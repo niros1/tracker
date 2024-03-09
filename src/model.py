@@ -5,29 +5,52 @@ from torch import tensor
 import torch
 from pydantic import BaseModel
 
+
 class VideoProperties(BaseModel):
     fps: float
     width: int
     height: int
     fourcc: str
 
+
 class TrackingFrameData(BaseModel):
     class Config:
         arbitrary_types_allowed = True
+
     index: int
     source_index: int
-    boxes: torch.Tensor # Bounding boxes returned from gdino
+    boxes: torch.Tensor  # Bounding boxes returned from gdino
     logits: torch.Tensor
     phrases: typing.List[str]
-    cordinates: typing.Optional[numpy.ndarray] = None # Real frame cordinates, respected to the frame size. based on boxes
+    cordinates: typing.Optional[numpy.ndarray] = (
+        None  # Real frame cordinates, respected to the frame size. based on boxes
+    )
+
+    @property
+    def box(self):
+        return self.boxes[0].unsqueeze(0)
+
+    @property
+    def logit(self):
+        return self.logits[0].unsqueeze(0)
+
+    @property
+    def phras(self):
+        return [self.phrases[0]]
+
+    @property
+    def cordinate(self):
+        assert self.cordinates is not None
+        return self.cordinates[0]
 
 
 class TrackinfVideoData(BaseModel):
     class Config:
         arbitrary_types_allowed = True
+
     all: list[TrackingFrameData] = []
-    X: numpy.ndarray = None # X smoothed cordinates
-    Y: numpy.ndarray = None # X smoothed cordinates
+    X: numpy.ndarray = None  # X smoothed cordinates
+    Y: numpy.ndarray = None  # X smoothed cordinates
 
 
 class Stack:
@@ -47,7 +70,9 @@ class Stack:
 
     def size(self):
         return len(self.stack)
+
     def __str__(self):
         return str(self.stack)
+
     def __iter__(self):
         return iter(self.stack)

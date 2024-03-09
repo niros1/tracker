@@ -102,14 +102,18 @@ def get_tracking_data(
             continue
 
         xyxy_cord = box_convert(boxes=cboxes, in_fmt="cxcywh", out_fmt="xyxy").numpy()
-        xyxy_cord[0]
+
         t_data = TrackingFrameData(
             index=counter,
             source_index=counter,
-            boxes=boxes[0].unsqueeze(0),
-            logits=logits[0].unsqueeze(0),
-            phrases=[phrases[0]],
-            cordinates=xyxy_cord[0],
+            # boxes=boxes[0].unsqueeze(0),
+            # logits=logits[0].unsqueeze(0),
+            # phrases=[phrases[0]],
+            # cordinates=xyxy_cord[0],
+            boxes=boxes,
+            logits=logits,
+            phrases=phrases,
+            cordinates=xyxy_cord,
         )
         vid_data.all.append(t_data)
         previouse_state = {
@@ -187,9 +191,9 @@ def process_video(args, file_path, model):
         tracking_data = pickle.load(open(pickle_name, "rb"))
 
     # Traking data manipulation
-    X = [c.cordinates[0] for c in tracking_data.all]
+    X = [c.cordinate[0] for c in tracking_data.all]
     tracking_data.X = smooth_data(X, window_size=100, use_median=True)
-    Y = [c.cordinates[1] for c in tracking_data.all]
+    Y = [c.cordinate[1] for c in tracking_data.all]
     tracking_data.Y = smooth_data(Y, window_size=100, use_median=True)
 
     plt.plot(np.arange(len(X)), np.array(X), label="Original")
