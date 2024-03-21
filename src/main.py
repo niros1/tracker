@@ -104,6 +104,7 @@ def get_tracking_data(
             counter += 1
             continue
 
+        # Convert the boxes to the frame size
         cboxes = boxes * torch.Tensor(
             [vid_props.width, vid_props.height, vid_props.width, vid_props.height]
         )
@@ -160,21 +161,7 @@ def main(args):
     if args.process_file != "":
         file_path = args.process_file
 
-    try:
-        from groundingdino.util.inference import (
-            load_model,
-            load_image,
-            predict,
-            annotate,
-        )
-
-        model = load_model(
-            "groundingdino/config/GroundingDINO_SwinT_OGC.py",
-            "weights/groundingdino_swint_ogc.pth",
-        )
-    except ImportError:
-        print("groundingdino module is not available, traking data can't be processed")
-        model = None
+    model = load_gd_model()
     # from groundingdino.util.inference import load_model, load_image, predict, annotate
 
     vid_props = extract_video_info(file_path)
@@ -193,7 +180,35 @@ def main(args):
         process_video(args, file_path, model, vid_props, tracking_data)
 
 
+def load_gd_model():
+    try:
+        from groundingdino.util.inference import (
+            load_model,
+            load_image,
+            predict,
+            annotate,
+        )
+
+        model = load_model(
+            "groundingdino/config/GroundingDINO_SwinT_OGC.py",
+            "weights/groundingdino_swint_ogc.pth",
+        )
+    except Exception as e:
+        print("groundingdino module is not available, traking data can't be processed")
+        model = None
+    return model
+
+
 def process_video(args, file_path, model, vid_props, tracking_data: TrackinfVideoData):
+    """Construct a new video with the tracking data
+
+    Args:
+        args (_type_): _description_
+        file_path (_type_): _description_
+        model (_type_): _description_
+        vid_props (_type_): _description_
+        tracking_data (TrackinfVideoData): _description_
+    """
     # vid_props = extract_video_info(file_path)
     # tracking_frames_limit = args.tracking_frames_limit
     file_name_no_ext = os.path.splitext(os.path.basename(file_path))[0]
@@ -203,21 +218,7 @@ def process_video(args, file_path, model, vid_props, tracking_data: TrackinfVide
     Y = [c.cordinate[1] for c in tracking_data.all]
     tracking_data.Y = smooth_data(Y, window_size=300, use_median=False)
 
-    plt.figure()
-    plt.subplot(2, 1, 1)
-    plt.plot(np.arange(len(X)), np.array(X), label="Original X")
-    plt.plot(np.arange(len(tracking_data.X)), tracking_data.X, label="Smooth X")
-    plt.title("X")
-    # plt.legend()
-    # plt.savefig(f"output/plot_x_{file_name_no_ext}.png")
-
-    plt.subplot(2, 1, 2)
-    plt.plot(np.arange(len(Y)), np.array(Y), label="Original Y")
-    plt.plot(np.arange(len(tracking_data.Y)), tracking_data.Y, label="Smooth Y")
-    plt.title("Y")
-
-    plt.legend()
-    plt.savefig(f"output/plot_xy_{file_name_no_ext}.png")
+    plot_smoothing_curve(tracking_data, file_name_no_ext, X, Y)
 
     # Create output video
     out_vid_len_frames = args.out_vid_len
@@ -246,6 +247,24 @@ def process_video(args, file_path, model, vid_props, tracking_data: TrackinfVide
 
     print(f"Releasing video {output_video_path}")
     output_video.release()
+
+
+def plot_smoothing_curve(tracking_data, file_name_no_ext, X, Y):
+    plt.figure()
+    plt.subplot(2, 1, 1)
+    plt.plot(np.arange(len(X)), np.array(X), label="Original X")
+    plt.plot(np.arange(len(tracking_data.X)), tracking_data.X, label="Smooth X")
+    plt.title("X")
+    # plt.legend()
+    # plt.savefig(f"output/plot_x_{file_name_no_ext}.png")
+
+    plt.subplot(2, 1, 2)
+    plt.plot(np.arange(len(Y)), np.array(Y), label="Original Y")
+    plt.plot(np.arange(len(tracking_data.Y)), tracking_data.Y, label="Smooth Y")
+    plt.title("Y")
+
+    plt.legend()
+    plt.savefig(f"output/plot_xy_{file_name_no_ext}.png")
 
 
 def get_video_writer(output_video_path, vid_props, fourcc=mp4v_fourcc):

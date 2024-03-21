@@ -1,6 +1,7 @@
 run_create_video:
 	export PYTHONPATH=/home/ubuntu/tracker/tracker:$PYTHONPATH && \
-	python src/main.py --process-file /Users/niro/dev/github/tracker/input/GX011620.MP4 \
+	python src/main.py \
+	--process-file /Users/niro/dev/github/tracker/input/GX011620.MP4 \
 	--create-video \
 	--out-vid-len 10000
 

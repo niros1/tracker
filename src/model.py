@@ -13,6 +13,32 @@ class VideoProperties(BaseModel):
     fourcc: str
 
 
+def is_point_in_boxes(point):
+    # Should be uniqie for each video
+    boxes = [
+        [(489, 707), (630, 820)],
+        [(706, 744), (815, 838)],
+        [(1359, 749), (1491, 836)],
+        [(2006, 770), (2179, 811)],
+        [(2279, 730), (2415, 806)],
+    ]
+    for box in boxes:
+        if (box[0][0] <= point[0] and box[1][0] >= point[0]) and (
+            box[0][1] <= point[1] and box[1][1] >= point[1]
+        ):
+            return True
+
+        # if box[0][0] <= point[0] <= box[1][0] and box[0][1] <= point[1] <= box[1][1]:
+        #     return True
+    return False
+
+
+# Example
+# TrackingFrameData(index=0, source_index=0,
+#                   boxes=tensor([[0.8665, 0.5211, 0.0061, 0.0093]]),
+#                   logits=tensor([0.4713]), phrases=['basketball'],
+#                   cordinates=array([[2334.7947,  785.0676, 2351.2825,  799.1918]],
+#                                    dtype=float32))
 class TrackingFrameData(BaseModel):
     class Config:
         arbitrary_types_allowed = True
@@ -26,8 +52,11 @@ class TrackingFrameData(BaseModel):
         None  # Real frame cordinates, respected to the frame size. based on boxes
     )
 
+    top_score_index_mem: int = -1
+
     @property
     def logit_trashold(self) -> float:
+        # Inferrance trashold
         return 0.5
 
     @property
@@ -35,11 +64,23 @@ class TrackingFrameData(BaseModel):
         """
         Returns the index of the top score founded by the vision model
         """
-        if len(self.logits) > 0:
-            max_index = torch.argmax(self.logits)
-            return int(max_index)
-        else:
-            return 0
+        # if self.top_score_index_mem > -1:
+        #     return self.top_score_index_mem
+        # assert self.cordinates
+        # Get the indices of the sorted elements
+        numpy_array = self.logits.detach().cpu().numpy()
+        indices = numpy.argsort(numpy_array)[::-1]
+        for i in indices:
+            if not is_point_in_boxes(self.cordinates[i]):
+                self.top_score_index_mem = i
+                return i
+        return None
+
+        # if len(self.logits) > 0:
+        #     max_index = torch.argmax(self.logits)
+        #     return int(max_index)
+        # else:
+        #     return 0
 
     @property
     def box(self):
@@ -56,10 +97,15 @@ class TrackingFrameData(BaseModel):
     @property
     def cordinate(self):
         assert self.cordinates is not None
-        if bool(self.logit[0] < self.logit_trashold):
-            return tensor([1000, 1200, 0, 0])
+        # if bool(self.logit[0] < self.logit_trashold):
+        #     return tensor([1000, 1200, 0, 0])
         # if(self.logit)
-        return self.cordinates[self.top_score_index]
+        i = self.top_score_index
+
+        if i is None:
+            return tensor([1000, 1200, 0, 0])
+        coor = self.cordinates[i]
+        return coor
 
 
 class TrackinfVideoData(BaseModel):
