@@ -212,21 +212,31 @@ def process_video(args, file_path, model, vid_props, tracking_data: TrackinfVide
     # vid_props = extract_video_info(file_path)
     # tracking_frames_limit = args.tracking_frames_limit
     file_name_no_ext = os.path.splitext(os.path.basename(file_path))[0]
+    window_size = 100
+
     # Traking data manipulation
-    X = [c.cordinate[0] for c in tracking_data.all]
-    tracking_data.X = smooth_data(X, window_size=300, use_median=False)
-    Y = [c.cordinate[1] for c in tracking_data.all]
-    tracking_data.Y = smooth_data(Y, window_size=300, use_median=False)
+    X = [c.cordinate[0] for c in tracking_data.all if c.cordinate is not None]
+    tracking_data.X = smooth_data(X, window_size=window_size, use_median=False)
+    tracking_data.X = smooth_data(
+        tracking_data.X, window_size=window_size, use_median=True
+    )
+    Y = [c.cordinate[1] for c in tracking_data.all if c.cordinate is not None]
+    tracking_data.Y = smooth_data(Y, window_size=window_size, use_median=False)
 
     plot_smoothing_curve(tracking_data, file_name_no_ext, X, Y)
 
     # Create output video
     out_vid_len_frames = args.out_vid_len
+    starting_point = args.start_frame
     output_video_path = f"output/video_{file_name_no_ext}_{out_vid_len_frames}.mp4"
     output_video = get_video_writer(output_video_path, vid_props)
 
     frame_iterator = iter(
-        retrieve_frames(video_file=file_path, frames_limit=out_vid_len_frames)
+        retrieve_frames(
+            video_file=file_path,
+            frames_limit=out_vid_len_frames,
+            starting_point=starting_point,
+        )
     )
     counter = 0
     history = Stack(30)
@@ -325,8 +335,18 @@ if __name__ == "__main__":
         action="store",
         type=int,
         default=os.getenv(
-            "PROCESSES_FILE",
+            "OUT_VID_LEN",
             1000,
+        ),
+    )
+
+    parser.add_argument(
+        "--start-frame",
+        action="store",
+        type=int,
+        default=os.getenv(
+            "START_FRAME",
+            0,
         ),
     )
 

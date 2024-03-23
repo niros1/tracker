@@ -15,14 +15,8 @@ class VideoProperties(BaseModel):
 
 def is_point_in_boxes(point):
     # Should be uniqie for each video
-    boxes = [
-        [(489, 707), (630, 820)],
-        [(706, 744), (815, 838)],
-        [(1359, 749), (1491, 836)],
-        [(2006, 770), (2179, 811)],
-        [(2279, 730), (2415, 806)],
-    ]
-    for box in boxes:
+
+    for box in blind_spots:
         if (box[0][0] <= point[0] and box[1][0] >= point[0]) and (
             box[0][1] <= point[1] and box[1][1] >= point[1]
         ):
@@ -39,6 +33,9 @@ def is_point_in_boxes(point):
 #                   logits=tensor([0.4713]), phrases=['basketball'],
 #                   cordinates=array([[2334.7947,  785.0676, 2351.2825,  799.1918]],
 #                                    dtype=float32))
+last_coor: numpy.ndarray = tensor([3000, 1200, 0, 0])
+
+
 class TrackingFrameData(BaseModel):
     class Config:
         arbitrary_types_allowed = True
@@ -51,13 +48,21 @@ class TrackingFrameData(BaseModel):
     cordinates: typing.Optional[numpy.ndarray] = (
         None  # Real frame cordinates, respected to the frame size. based on boxes
     )
+    last_coor: numpy.ndarray = tensor([1000, 1200, 0, 0])
 
     top_score_index_mem: int = -1
+
+    # def __setstate__(self, state):
+    #     if not hasattr(self, "__pydantic_model__"):
+    #         self.__pydantic_model__ = set()
+    #     if not hasattr(self, "last_coor"):
+    #         self.last_coor = None
+    #     self.__dict__.update(state)
 
     @property
     def logit_trashold(self) -> float:
         # Inferrance trashold
-        return 0.5
+        return 0.4
 
     @property
     def top_score_index(self) -> int | None:
@@ -95,16 +100,31 @@ class TrackingFrameData(BaseModel):
         return [self.phrases[self.top_score_index]]
 
     @property
+    def raw_cordinate(self):
+        return self.cordinates[0]
+
+    @property
     def cordinate(self):
+        global last_coor
         assert self.cordinates is not None
+
         # if bool(self.logit[0] < self.logit_trashold):
         #     return tensor([1000, 1200, 0, 0])
         # if(self.logit)
         i = self.top_score_index
 
         if i is None:
-            return tensor([1000, 1200, 0, 0])
+            # return tensor([1000, 1200, 0, 0])
+            return last_coor
+
         coor = self.cordinates[i]
+        # if coor[0] > 1800 and coor[0] < 2300:
+        #     coor[0] = coor[0] * 1.15
+        # if coor[0] < 1200:
+        #     coor[0] = coor[0] * 0.5
+        # No vertical movment
+        coor[1] = 1200
+        last_coor = coor
         return coor
 
 
@@ -115,6 +135,15 @@ class TrackinfVideoData(BaseModel):
     all: list[TrackingFrameData] = []
     X: numpy.ndarray = None  # X smoothed cordinates
     Y: numpy.ndarray = None  # X smoothed cordinates
+
+
+blind_spots: typing.List = [
+    [(489, 707), (630, 820)],
+    [(706, 744), (815, 838)],
+    [(1359, 749), (1491, 836)],
+    [(2006, 770), (2100, 825)],
+    [(2279, 730), (2415, 806)],
+]
 
 
 class Stack:

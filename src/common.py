@@ -10,7 +10,7 @@ import torch
 from PIL import Image
 
 from torchvision.ops import box_convert
-from model import Stack, TrackingFrameData
+from model import Stack, blind_spots, TrackingFrameData
 
 
 def is_iterable(obj):
@@ -64,7 +64,7 @@ def extract_frames(video_path, output_folder, frames_limit=100, skip=0):
 
 
 def retrieve_frames(
-    video_file: str, frames_limit=10, accuracy=0
+    video_file: str, frames_limit=10, starting_point=0, accuracy=0
 ) -> Generator[np.ndarray, None, None]:
     import time
 
@@ -74,10 +74,19 @@ def retrieve_frames(
     if not os.path.isfile(video_file):
         raise FileNotFoundError(f"No such file: '{video_file}'")
     video = cv2.VideoCapture(video_file)
-    frame_count = 0
 
+    frame_count = 0
+    # frames_limit += starting_point
     start_time = time.time()
+    print(f"Starting Point: {starting_point} frames")
+    video.set(cv2.CAP_PROP_POS_FRAMES, starting_point)
     while video.isOpened():
+        # if frame_count < starting_point:
+        #     print(f"\rSkipping {starting_point} frames ", end="")
+        #     # frame_count += 1
+        #     video.grab()
+        #     continue
+
         # Skip frame (performance optimizztion)
         if accuracy != 0 and frame_count % accuracy != 0:
             # print("before grab time:", time.time() - start_time)
@@ -172,10 +181,26 @@ def write_frame(
     # y = 800
     # x = 500
 
-    zoom_frame = zoom_at(source_frame, 2, coord=(x, y))
+    frame_with_bbox = draw_bounding_boxes(
+        source_frame, blind_spots, tracking_data.phrases
+    )
+    zoom_frame = zoom_at(frame_with_bbox, 2, coord=(x, y))
 
     # print(f"Frame {tracking_data.index}->>>>>", (x, y))
 
     # add_text_to_frame2(zoom_frame, history, position=(50, 150))
     vid_writer.write(zoom_frame)
     return f"Frame {tracking_data.index} - Zoom at: {x}, {y} ---- phrases: {phrases}"
+
+
+def draw_bounding_boxes(image, boxes, labels, color=(255, 0, 0), thickness=2):
+    """
+    Draw bounding boxes on an image.
+    """
+    # for box, label in zip(boxes, labels):
+    for box in boxes:
+        # x1, y1, x2, y2 = box
+        left_upper, right_lower = box
+        cv2.rectangle(image, left_upper, right_lower, color, thickness)
+        # cv2.putText(image, label, (x1, y1), cv2.FONT_HERSHEY_SIMPLEX, 1, color, 2)
+    return image
