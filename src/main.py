@@ -212,7 +212,7 @@ def process_video(args, file_path, model, vid_props, tracking_data: TrackinfVide
     # vid_props = extract_video_info(file_path)
     # tracking_frames_limit = args.tracking_frames_limit
     file_name_no_ext = os.path.splitext(os.path.basename(file_path))[0]
-    window_size = 100
+    window_size = 300
 
     # Traking data manipulation
     X = [c.cordinate[0] for c in tracking_data.all if c.cordinate is not None]
@@ -223,7 +223,7 @@ def process_video(args, file_path, model, vid_props, tracking_data: TrackinfVide
     Y = [c.cordinate[1] for c in tracking_data.all if c.cordinate is not None]
     tracking_data.Y = smooth_data(Y, window_size=window_size, use_median=False)
 
-    plot_smoothing_curve(tracking_data, file_name_no_ext, X, Y)
+    plot_smoothing_curve(tracking_data, file_name_no_ext, X, tracking_data.X)
 
     # Create output video
     out_vid_len_frames = args.out_vid_len
@@ -238,32 +238,35 @@ def process_video(args, file_path, model, vid_props, tracking_data: TrackinfVide
             starting_point=starting_point,
         )
     )
-    counter = 0
+    frame_index = starting_point
     history = Stack(30)
     for frame in tqdm(frame_iterator, total=5):
-        track_data = tracking_data.all[counter]
+        track_data = tracking_data.all[frame_index]
         doc_str = write_frame(
             output_video,
             frame,
             history,
             track_data,
-            tracking_data.X[counter],
-            tracking_data.Y[counter],
+            tracking_data.X[frame_index],
+            tracking_data.Y[frame_index],
             track_data.logits,
             track_data.phrases,
         )
         history.push(doc_str)
-        counter += 1
+        frame_index += 1
 
     print(f"Releasing video {output_video_path}")
     output_video.release()
 
 
 def plot_smoothing_curve(tracking_data, file_name_no_ext, X, Y):
+    size = 5000
     plt.figure()
     plt.subplot(2, 1, 1)
-    plt.plot(np.arange(len(X)), np.array(X), label="Original X")
-    plt.plot(np.arange(len(tracking_data.X)), tracking_data.X, label="Smooth X")
+    plt.plot(np.arange(len(X))[:size], np.array(X)[:size], label="Original X")
+    plt.plot(
+        np.arange(len(tracking_data.X))[:size], tracking_data.X[:size], label="Smooth X"
+    )
     plt.title("X")
     # plt.legend()
     # plt.savefig(f"output/plot_x_{file_name_no_ext}.png")

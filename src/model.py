@@ -48,7 +48,6 @@ class TrackingFrameData(BaseModel):
     cordinates: typing.Optional[numpy.ndarray] = (
         None  # Real frame cordinates, respected to the frame size. based on boxes
     )
-    last_coor: numpy.ndarray = tensor([1000, 1200, 0, 0])
 
     top_score_index_mem: int = -1
 
@@ -62,7 +61,7 @@ class TrackingFrameData(BaseModel):
     @property
     def logit_trashold(self) -> float:
         # Inferrance trashold
-        return 0.4
+        return 0.45
 
     @property
     def top_score_index(self) -> int | None:
@@ -118,10 +117,13 @@ class TrackingFrameData(BaseModel):
             return last_coor
 
         coor = self.cordinates[i]
-        # if coor[0] > 1800 and coor[0] < 2300:
-        #     coor[0] = coor[0] * 1.15
-        # if coor[0] < 1200:
-        #     coor[0] = coor[0] * 0.5
+        s1 = coor[0]
+        if coor[0] > 1500 and coor[0] < 2300:
+            coor[0] = int(coor[0]) * 1.5
+        if coor[0] < 1200:
+            coor[0] = int(coor[0]) * 0.6
+        # if coor[0] < 300:
+        #     print(f"coor[0] < 300 {coor[0]} {s1}")
         # No vertical movment
         coor[1] = 1200
         last_coor = coor
