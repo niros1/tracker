@@ -180,25 +180,28 @@ def write_frame(
 
     # y = 800
     # x = 500
+    frame_with_bbox = source_frame.copy()
 
-    frame_with_bbox = draw_bounding_boxes(
-        source_frame, blind_spots, tracking_data.phrases
-    )
+    # Blind spots bounding boxes
+    # frame_with_bbox = draw_bounding_boxes(
+    #     source_frame, blind_spots, tracking_data.phrases
+    # )
 
     anotations = tracking_data.cordinates
     anotations = [
         [(int(x), int(y)) for x, y in zip(arr[::2], arr[1::2])] for arr in anotations
     ]
-    # print(anotations)
-    frame_with_bbox = draw_bounding_boxes(
-        frame_with_bbox, anotations, tracking_data.phrases, color=(0, 255, 0)
-    )
+
+    # Tracking bounding boxes
+    # frame_with_bbox = draw_bounding_boxes(
+    #     frame_with_bbox, anotations, tracking_data.phrases, color=(0, 255, 0)
+    # )
 
     zoom_frame = zoom_at(frame_with_bbox, 2, coord=(x, y))
 
     # print(f"Frame {tracking_data.index}->>>>>", (x, y))
 
-    add_text_to_frame2(zoom_frame, history, position=(50, 150))
+    # add_text_to_frame2(zoom_frame, history, position=(50, 150))
     vid_writer.write(zoom_frame)
     return f"source idx{tracking_data.source_index}  idx {tracking_data.index}"
 

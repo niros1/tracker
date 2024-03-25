@@ -280,7 +280,7 @@ def plot_smoothing_curve(tracking_data, file_name_no_ext, X, Y):
     plt.savefig(f"output/plot_xy_{file_name_no_ext}.png")
 
 
-def get_video_writer(output_video_path, vid_props, fourcc=mp4v_fourcc):
+def get_video_writer(output_video_path, vid_props, fourcc=h264):
     try:
         os.remove(output_video_path)
     except:

@@ -3,7 +3,7 @@ run_create_video:
 	python src/main.py \
 	--process-file /Users/niro/dev/github/tracker/input/GX011620.MP4 \
 	--create-video \
-	--out-vid-len 1000 \
+	--out-vid-len 5000 \
 	--start-frame 5500
 
 
