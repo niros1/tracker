@@ -119,7 +119,7 @@ class TrackingFrameData(BaseModel):
         coor = self.cordinates[i]
         s1 = coor[0]
         if coor[0] > 1500 and coor[0] < 2300:
-            coor[0] = int(coor[0]) * 1.5
+            coor[0] = min(int(coor[0]) * 1.5, 2500)
         if coor[0] < 1200:
             coor[0] = int(coor[0]) * 0.6
         # if coor[0] < 300:
