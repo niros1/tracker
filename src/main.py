@@ -29,6 +29,8 @@ BOX_TRESHOLD = 0.35
 TEXT_TRESHOLD = 0.25
 mp4v_fourcc = cv2.VideoWriter_fourcc(*"MP4V")
 
+FOURCC = mp4v_fourcc
+
 
 def extract_video_info(video_file_path) -> VideoProperties | None:
     try:
@@ -268,9 +270,7 @@ def process_video(args, file_path, model, vid_props, tracking_data: TrackinfVide
     output_video.release()
 
     print(f"Attaching audio to {output_video_path}")
-    extract_audio_from_frames(
-        file_path, starting_point, starting_point + out_vid_len_frames
-    )
+    extract_audio_from_frames(file_path, starting_point, out_vid_len_frames)
     attach_audio(file_path, output_video_path, output_video_path_aud)
 
 
@@ -295,7 +295,7 @@ def plot_smoothing_curve(tracking_data, file_name_no_ext, X, Y):
     plt.savefig(f"output/plot_xy_{file_name_no_ext}.png")
 
 
-def get_video_writer(output_video_path, vid_props, fourcc=h264):
+def get_video_writer(output_video_path, vid_props, fourcc=FOURCC):
     try:
         os.remove(output_video_path)
     except:

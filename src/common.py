@@ -248,13 +248,13 @@ def attach_audio(
     final_video.write_videofile(output_video_path_aud)
 
 
-def extract_audio_from_frames(org_vid_path, start_frame, end_frame):
+def extract_audio_from_frames(org_vid_path, start_frame, length_by_frames):
     """This one will extract audio from the specified frames.
 
     Args:
         org_vid_path (_type_): _description_
         start_frame (_type_): _description_
-        end_frame (_type_): _description_
+        length_by_frames (_type_): _description_
 
     Returns:
         _type_: _description_
@@ -266,9 +266,10 @@ def extract_audio_from_frames(org_vid_path, start_frame, end_frame):
     # Calculate start and end times in seconds
     fps = original_video.fps  # frames per second
     start_time = start_frame / fps
-    end_time = end_frame / fps
+    end_time = (start_frame + length_by_frames) / fps
+    print(f"Start time: {start_time}, End time: {end_time}")
 
     # Extract audio from the specified frames
-    audio_subclip = original_audio.subclip(start_time, end_time)
+    audio_subclip = original_audio.subclip(int(start_time), int(end_time))
 
     return audio_subclip
