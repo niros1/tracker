@@ -12,7 +12,13 @@ import matplotlib.pyplot as plt
 import torch
 from torchvision.ops import box_convert
 
-from common import convert_ndarray, retrieve_frames, write_frame
+from common import (
+    convert_ndarray,
+    extract_audio_from_frames,
+    retrieve_frames,
+    write_frame,
+    attach_audio,
+)
 from model import Stack, TrackinfVideoData, VideoProperties, TrackingFrameData
 
 h264 = cv2.VideoWriter_fourcc("h", "2", "6", "4")
@@ -229,6 +235,9 @@ def process_video(args, file_path, model, vid_props, tracking_data: TrackinfVide
     out_vid_len_frames = args.out_vid_len
     starting_point = args.start_frame
     output_video_path = f"output/video_{file_name_no_ext}_{out_vid_len_frames}.mp4"
+    output_video_path_aud = (
+        f"output/video_{file_name_no_ext}_{out_vid_len_frames}_aud.mp4"
+    )
     output_video = get_video_writer(output_video_path, vid_props)
 
     frame_iterator = iter(
@@ -257,6 +266,12 @@ def process_video(args, file_path, model, vid_props, tracking_data: TrackinfVide
 
     print(f"Releasing video {output_video_path}")
     output_video.release()
+
+    print(f"Attaching audio to {output_video_path}")
+    extract_audio_from_frames(
+        file_path, starting_point, starting_point + out_vid_len_frames
+    )
+    attach_audio(file_path, output_video_path, output_video_path_aud)
 
 
 def plot_smoothing_curve(tracking_data, file_name_no_ext, X, Y):

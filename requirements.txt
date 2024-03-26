@@ -9,3 +9,5 @@ opencv-python
 supervision
 pycocotools
 pydantic
+moviepy
+Pygame

@@ -11,6 +11,7 @@ from PIL import Image
 
 from torchvision.ops import box_convert
 from model import Stack, blind_spots, TrackingFrameData
+from moviepy.editor import VideoFileClip
 
 
 def is_iterable(obj):
@@ -217,3 +218,57 @@ def draw_bounding_boxes(image, boxes, labels, color=(255, 0, 0), thickness=2):
         cv2.rectangle(image, left_upper, right_lower, color, thickness)
         # cv2.putText(image, label, (x1, y1), cv2.FONT_HERSHEY_SIMPLEX, 1, color, 2)
     return image
+
+
+def attach_audio(
+    org_vid_path, output_vid_path, output_video_path_aud, audio_subclip=None
+):
+    """This one will attach the whole audio from the original video to the output video.
+
+    Args:
+        org_vid_path (_type_): _description_
+        output_vid_path (_type_): _description_
+        output_video_path_aud (_type_): _description_
+    """
+
+    if audio_subclip is None:
+        # Load the original video and get its audio
+        original_video = VideoFileClip(org_vid_path)
+        original_audio = original_video.audio
+    else:
+        original_audio = audio_subclip
+
+    # Load the output video
+    output_video = VideoFileClip(output_vid_path)
+
+    # Add the audio to the output video
+    final_video = output_video.set_audio(original_audio)
+
+    # Write the final video to a file
+    final_video.write_videofile(output_video_path_aud)
+
+
+def extract_audio_from_frames(org_vid_path, start_frame, end_frame):
+    """This one will extract audio from the specified frames.
+
+    Args:
+        org_vid_path (_type_): _description_
+        start_frame (_type_): _description_
+        end_frame (_type_): _description_
+
+    Returns:
+        _type_: _description_
+    """
+    # Load the original video and get its audio
+    original_video = VideoFileClip(org_vid_path)
+    original_audio = original_video.audio
+
+    # Calculate start and end times in seconds
+    fps = original_video.fps  # frames per second
+    start_time = start_frame / fps
+    end_time = end_frame / fps
+
+    # Extract audio from the specified frames
+    audio_subclip = original_audio.subclip(start_time, end_time)
+
+    return audio_subclip
