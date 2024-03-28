@@ -11,3 +11,4 @@ pycocotools
 pydantic
 moviepy
 Pygame
+loguru

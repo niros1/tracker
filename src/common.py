@@ -1,6 +1,9 @@
 from ast import Tuple
 import os
+import sys
+import time
 import cv2
+from loguru import logger
 from scipy.fftpack import sc_diff
 import matplotlib.pyplot as plt
 import cv2 as cv
@@ -12,6 +15,15 @@ from PIL import Image
 from torchvision.ops import box_convert
 from model import Stack, blind_spots, TrackingFrameData
 from moviepy.editor import VideoFileClip
+
+LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
+logger.remove()
+logger.add(
+    sys.stdout,
+    format="{time} {level} {message}",
+    # filter="gradio-server",
+    level="INFO",
+)
 
 
 def is_iterable(obj):
@@ -176,34 +188,43 @@ def write_frame(
     y,
     logits,
     phrases,
+    draw_blind_spots=True,
+    draw_tracking=True,
+    write_history=True,
 ):
-    # annotated_frame = annotate(image_source=source_frame, boxes=tracking_data.boxes, logits=logits, phrases=phrases)
+    start_time = time.time()  # Start timing
 
-    # y = 800
-    # x = 500
+    # annotated_frame = annotate(image_source=source_frame, boxes=tracking_data.boxes, logits=logits, phrases=phrases)
     frame_with_bbox = source_frame.copy()
+    logger.debug(f"Time 1: {time.time() - start_time} seconds")
 
     # Blind spots bounding boxes
-    # frame_with_bbox = draw_bounding_boxes(
-    #     source_frame, blind_spots, tracking_data.phrases
-    # )
+
+    if draw_blind_spots:
+        frame_with_bbox = draw_bounding_boxes(
+            source_frame, blind_spots, tracking_data.phrases
+        )
 
     anotations = tracking_data.cordinates
     anotations = [
         [(int(x), int(y)) for x, y in zip(arr[::2], arr[1::2])] for arr in anotations
     ]
+    logger.debug(f"Time 2: {time.time() - start_time} seconds")
 
     # Tracking bounding boxes
-    # frame_with_bbox = draw_bounding_boxes(
-    #     frame_with_bbox, anotations, tracking_data.phrases, color=(0, 255, 0)
-    # )
+    if draw_tracking:
+        frame_with_bbox = draw_bounding_boxes(
+            frame_with_bbox, anotations, tracking_data.phrases, color=(0, 255, 0)
+        )
 
     zoom_frame = zoom_at(frame_with_bbox, 2, coord=(x, y))
+    logger.debug(f"Time 3: {time.time() - start_time} seconds")
 
     # print(f"Frame {tracking_data.index}->>>>>", (x, y))
-
-    # add_text_to_frame2(zoom_frame, history, position=(50, 150))
+    if write_history:
+        add_text_to_frame2(zoom_frame, history, position=(50, 150))
     vid_writer.write(zoom_frame)
+    logger.debug(f"Time 4: {time.time() - start_time} seconds")
     return f"source idx{tracking_data.source_index}  idx {tracking_data.index}"
 
 

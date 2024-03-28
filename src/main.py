@@ -3,14 +3,16 @@ import argparse
 from ast import arg
 import os
 import pickle
+import sys
 import cv2
 import numpy as np
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 
-
+import time
 import torch
 from torchvision.ops import box_convert
+from loguru import logger
 
 from common import (
     convert_ndarray,
@@ -24,10 +26,12 @@ from model import Stack, TrackinfVideoData, VideoProperties, TrackingFrameData
 h264 = cv2.VideoWriter_fourcc("h", "2", "6", "4")
 mp4v = cv2.VideoWriter_fourcc("m", "p", "4", "v")
 mp4v_2 = cv2.VideoWriter_fourcc(*"MP4V")
+xvid_fourcc = cv2.VideoWriter_fourcc(*"XVID")
+mp4v_fourcc = cv2.VideoWriter_fourcc(*"MP4V")
+
 
 BOX_TRESHOLD = 0.35
 TEXT_TRESHOLD = 0.25
-mp4v_fourcc = cv2.VideoWriter_fourcc(*"MP4V")
 
 FOURCC = mp4v_fourcc
 
@@ -252,7 +256,9 @@ def process_video(args, file_path, model, vid_props, tracking_data: TrackinfVide
     frame_index = starting_point
     history = Stack(30)
     for frame in tqdm(frame_iterator, total=5):
-        track_data = tracking_data.all[frame_index]
+        track_data: TrackingFrameData = tracking_data.all[frame_index]
+        start_time = time.time()  # Start timing
+        history.push(str(track_data))
         doc_str = write_frame(
             output_video,
             frame,
@@ -263,15 +269,18 @@ def process_video(args, file_path, model, vid_props, tracking_data: TrackinfVide
             track_data.logits,
             track_data.phrases,
         )
-        history.push(doc_str)
+        end_time = time.time()  # End timing
+        elapsed_time = end_time - start_time  # Calculate elapsed time
+        # logger.info(f"Time elapsed for this iteration: {elapsed_time} seconds")
+
         frame_index += 1
 
     print(f"Releasing video {output_video_path}")
     output_video.release()
 
     print(f"Attaching audio to {output_video_path}")
-    extract_audio_from_frames(file_path, starting_point, out_vid_len_frames)
-    attach_audio(file_path, output_video_path, output_video_path_aud)
+    # extract_audio_from_frames(file_path, starting_point, out_vid_len_frames)
+    # attach_audio(file_path, output_video_path, output_video_path_aud)
 
 
 def plot_smoothing_curve(tracking_data, file_name_no_ext, X, Y):
@@ -311,6 +320,15 @@ def get_video_writer(output_video_path, vid_props, fourcc=FOURCC):
 
 # %%
 if __name__ == "__main__":
+    logger.remove()
+
+    LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
+    logger.add(
+        sys.stdout,
+        format="{time} {level} {message}",
+        # filter="gradio-server",
+        level="INFO",
+    )
     parser = argparse.ArgumentParser(description="MLFlow console")
     parser.add_argument(
         "--force-create-tracking",

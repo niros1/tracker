@@ -40,6 +40,9 @@ class TrackingFrameData(BaseModel):
     class Config:
         arbitrary_types_allowed = True
 
+    def __str__(self):
+        return f"{self.index} {self.source_index} {self.logits} {self.cordinates} {self.phrases}"
+
     index: int
     source_index: int
     boxes: torch.Tensor  # Bounding boxes returned from gdino
