@@ -163,3 +163,7 @@ cython_debug/
 *.jpg
 groundingdino
 weights
+
+input
+output
+*.mp3
