@@ -82,11 +82,11 @@ def get_tracking_data(
             vid_data.all.append(
                 TrackingFrameData(
                     index=counter,
-                    source_index=previouse_state["counter"],
-                    boxes=previouse_state["boxes"],
-                    logits=previouse_state["logits"],
-                    phrases=previouse_state["phrases"],
-                    cordinates=previouse_state["cordinates"],
+                    source_index=previouse_state["counter"] if "counter" in previouse_state else counter,
+                    boxes=previouse_state["boxes"] if "boxes" in previouse_state else torch.Tensor([]),
+                    logits=previouse_state["logits"] if "logits" in previouse_state else torch.Tensor([]),
+                    phrases=previouse_state["phrases"] if "phrases" in previouse_state else [],
+                    cordinates=previouse_state["cordinates"] if "cordinates" in previouse_state else None,
                 )
             )
             counter += 1
@@ -106,11 +106,11 @@ def get_tracking_data(
             vid_data.all.append(
                 TrackingFrameData(
                     index=counter,
-                    source_index=previouse_state["counter"],
-                    boxes=previouse_state["boxes"],
-                    logits=previouse_state["logits"],
-                    phrases=previouse_state["phrases"],
-                    cordinates=previouse_state["cordinates"],
+                    source_index=previouse_state["counter"] if "counter" in previouse_state else counter,
+                    boxes=previouse_state["boxes"] if "boxes" in previouse_state else torch.Tensor([]),
+                    logits=previouse_state["logits"] if "logits" in previouse_state else torch.Tensor([]),
+                    phrases=previouse_state["phrases"] if "phrases" in previouse_state else [],
+                    cordinates=previouse_state["cordinates"] if "cordinates" in previouse_state else None,
                 )
             )
             counter += 1
