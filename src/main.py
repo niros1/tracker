@@ -169,27 +169,28 @@ def main(args):
         exit()
 
     if args.process_folder != "":
-        folder_name = args.process_folder
+        folder_path = args.process_folder
     if args.process_file != "":
-        file_path = args.process_file
+        files = args.process_file
+    for file_name in files:
+        file_path = f"{folder_path}/{file_name}"
+        model = load_gd_model()
+        # from groundingdino.util.inference import load_model, load_image, predict, annotate
 
-    model = load_gd_model()
-    # from groundingdino.util.inference import load_model, load_image, predict, annotate
+        vid_props = extract_video_info(file_path)
 
-    vid_props = extract_video_info(file_path)
+        file_name_no_ext = os.path.splitext(os.path.basename(file_path))[0]
+        pickle_name = f"output/tracking_data_{file_name_no_ext}.pkl"
 
-    file_name_no_ext = os.path.splitext(os.path.basename(file_path))[0]
-    pickle_name = f"output/tracking_data_{file_name_no_ext}.pkl"
+        if args.force_create_tracking or not os.path.exists(pickle_name):
+            tracking_data = get_tracking_data(
+                model, file_path, vid_props, frames_limit=args.tracking_frames_limit
+            )
+            pickle.dump(tracking_data, open(pickle_name, "wb"))
 
-    if args.force_create_tracking or not os.path.exists(pickle_name):
-        tracking_data = get_tracking_data(
-            model, file_path, vid_props, frames_limit=args.tracking_frames_limit
-        )
-        pickle.dump(tracking_data, open(pickle_name, "wb"))
-
-    if args.create_video is True:
-        tracking_data = pickle.load(open(pickle_name, "rb"))
-        process_video(args, file_path, model, vid_props, tracking_data)
+        if args.create_video is True:
+            tracking_data = pickle.load(open(pickle_name, "rb"))
+            process_video(args, file_path, model, vid_props, tracking_data)
 
 
 def load_gd_model():
@@ -359,7 +360,7 @@ if __name__ == "__main__":
 
     parser.add_argument(
         "--process-file",
-        action="store",
+        nargs='*',
         default=os.getenv(
             "PROCESSES_FILE",
             "",
