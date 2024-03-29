@@ -94,12 +94,6 @@ def retrieve_frames(
     print(f"Starting Point: {starting_point} frames")
     video.set(cv2.CAP_PROP_POS_FRAMES, starting_point)
     while video.isOpened():
-        # if frame_count < starting_point:
-        #     print(f"\rSkipping {starting_point} frames ", end="")
-        #     # frame_count += 1
-        #     video.grab()
-        #     continue
-
         # Skip frame (performance optimizztion)
         if accuracy != 0 and frame_count % accuracy != 0:
             # print("before grab time:", time.time() - start_time)
@@ -206,13 +200,14 @@ def write_frame(
         )
 
     anotations = tracking_data.cordinates
-    anotations = [
-        [(int(x), int(y)) for x, y in zip(arr[::2], arr[1::2])] for arr in anotations
-    ]
+    if anotations is not None:
+        anotations = [
+            [(int(x), int(y)) for x, y in zip(arr[::2], arr[1::2])] for arr in anotations
+        ]
     logger.debug(f"Time 2: {time.time() - start_time} seconds")
 
     # Tracking bounding boxes
-    if draw_tracking:
+    if draw_tracking and anotations is not None:
         frame_with_bbox = draw_bounding_boxes(
             frame_with_bbox, anotations, tracking_data.phrases, color=(0, 255, 0)
         )

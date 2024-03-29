@@ -33,7 +33,7 @@ mp4v_fourcc = cv2.VideoWriter_fourcc(*"MP4V")
 BOX_TRESHOLD = 0.35
 TEXT_TRESHOLD = 0.25
 
-FOURCC = mp4v_fourcc
+FOURCC = mp4v
 
 
 def extract_video_info(video_file_path) -> VideoProperties | None:
@@ -179,8 +179,9 @@ def main(args):
 
         vid_props = extract_video_info(file_path)
 
-        file_name_no_ext = os.path.splitext(os.path.basename(file_path))[0]
-        pickle_name = f"output/tracking_data_{file_name_no_ext}.pkl"
+        file_name_no_ext = os.path.splitext(file_name)[0]
+        # dir_path = os.path.dirname(file_path)
+        pickle_name = f"{folder_path}/tracking/tracking_data_{file_name_no_ext}.pkl"
 
         if args.force_create_tracking or not os.path.exists(pickle_name):
             tracking_data = get_tracking_data(
@@ -190,7 +191,7 @@ def main(args):
 
         if args.create_video is True:
             tracking_data = pickle.load(open(pickle_name, "rb"))
-            process_video(args, file_path, model, vid_props, tracking_data)
+            process_video(args, file_path, model, vid_props, tracking_data, args.attach_sound)
 
 
 def load_gd_model():
@@ -212,7 +213,7 @@ def load_gd_model():
     return model
 
 
-def process_video(args, file_path, model, vid_props, tracking_data: TrackinfVideoData):
+def process_video(args, file_path, model, vid_props, tracking_data: TrackinfVideoData, attach_sound=False):
     """Construct a new video with the tracking data
 
     Args:
@@ -269,6 +270,9 @@ def process_video(args, file_path, model, vid_props, tracking_data: TrackinfVide
             tracking_data.Y[frame_index],
             track_data.logits,
             track_data.phrases,
+            draw_blind_spots=False,
+            draw_tracking=False,
+            write_history=False,
         )
         end_time = time.time()  # End timing
         elapsed_time = end_time - start_time  # Calculate elapsed time
@@ -279,10 +283,23 @@ def process_video(args, file_path, model, vid_props, tracking_data: TrackinfVide
     print(f"Releasing video {output_video_path}")
     output_video.release()
 
-    print(f"Attaching audio to {output_video_path}")
-    # extract_audio_from_frames(file_path, starting_point, out_vid_len_frames)
-    # attach_audio(file_path, output_video_path, output_video_path_aud)
+    if attach_sound:
+        output_video_path_aud = attach_audio_to_video(file_path, output_video_path, file_name_no_ext)
 
+        # extract_audio_from_frames(file_path, starting_point, out_vid_len_frames)
+        # attach_audio(file_path, output_video_path, output_video_path_aud)
+
+
+def attach_audio_to_video(audio_vid_path, destinamtion_video_path, aac_file_name):
+    import subprocess
+    print(f"Attaching audio to {destinamtion_video_path}")
+    command = f"ffmpeg -y -i {audio_vid_path} -vn -acodec copy output/{aac_file_name}.aac"
+    subprocess.run(command, shell=True, check=True)
+    output_video_path_aud = destinamtion_video_path.replace(".mp4", "_aud.mp4")
+    command = f"ffmpeg -y -i {destinamtion_video_path} -i output/{aac_file_name}.aac -c:v copy -c:a aac {output_video_path_aud}"
+    subprocess.run(command, shell=True, check=True)
+    print(f"Audio attached to {output_video_path_aud}")
+    return output_video_path_aud
 
 def plot_smoothing_curve(tracking_data, file_name_no_ext, X, Y):
     size = 5000
@@ -319,17 +336,7 @@ def get_video_writer(output_video_path, vid_props, fourcc=FOURCC):
     return output_video
 
 
-# %%
-if __name__ == "__main__":
-    logger.remove()
-
-    LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
-    logger.add(
-        sys.stdout,
-        format="{time} {level} {message}",
-        # filter="gradio-server",
-        level="INFO",
-    )
+def set_args():
     parser = argparse.ArgumentParser(description="MLFlow console")
     parser.add_argument(
         "--force-create-tracking",
@@ -348,6 +355,16 @@ if __name__ == "__main__":
             False,
         ),
     )
+
+    parser.add_argument(
+        "--attach-sound",
+        action="store_true",
+        default=os.getenv(
+            "ATTACH_SOUND",
+            True,
+        ),
+    )
+    
 
     parser.add_argument(
         "--process-folder",
@@ -398,6 +415,19 @@ if __name__ == "__main__":
     )
 
     args = parser.parse_args()
+    return args
 
-    print(args)
+# %%
+if __name__ == "__main__":
+    logger.remove()
+
+    LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
+    logger.add(
+        sys.stdout,
+        format="{time} {level} {message}",
+        # filter="gradio-server",
+        level="INFO",
+    )
+
+    args = set_args()
     main(args)

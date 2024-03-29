@@ -3,9 +3,15 @@ run_create_video:
 	export LOG_LEVEL=INFO && \
 	python src/main.py \
 	--create-video \
-	--out-vid-len 300 \
-	--start-frame 3000 \
-	--process-file /Users/niro/dev/github/tracker/input/GX011611.MP4 \
+	--attach-sound \
+	--out-vid-len 0 \
+	--start-frame 0 \
+	--process-folder /tmp/natanya \
+	--process-file GX011638.MP4 GX011639.MP4 GX011640.MP4 GX011641.MP4 GX011642.MP4 GX011643.MP4 GX011644.MP4 GX011645.MP4
+	
+
+
+
 
 # GX011644, 41, 
 
@@ -17,8 +23,12 @@ run_create_tracking:
 	--process-folder /opt/dlami/nvme/s3sync/natanya \
 	--process-file GX011642.MP4 GX011640.MP4 GX011643.MP4 GX011645.MP4
 
-download_data:
-	aws s3 cp s3://niro-prv-assets/input/natanya /opt/dlami/nvme/s3sync/natanya --recursive
+download_videos:
+	aws s3 cp s3://niro-prv-assets/input/natanya /tmp/natanya --recursive
 
-upload_data:
+upload_tracking_data:
 	aws s3 cp output/natanya s3://niro-prv-assets/input/natanya/tracking --recursive
+
+set_sound:
+	ffmpeg -i /tmp/natanya/GX011645.MP4 -vn -acodec copy output_audio.aac
+	ffmpeg -i output/video_GX011645_0.mp4 -i output_audio.aac -c:v copy -c:a aac output/video_GX011645_0_aud.mp4
