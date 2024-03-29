@@ -167,3 +167,4 @@ weights
 input
 output
 *.mp3
+tmp/client_secret.json
