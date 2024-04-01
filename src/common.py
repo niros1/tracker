@@ -202,7 +202,8 @@ def write_frame(
     anotations = tracking_data.cordinates
     if anotations is not None:
         anotations = [
-            [(int(x), int(y)) for x, y in zip(arr[::2], arr[1::2])] for arr in anotations
+            [(int(x), int(y)) for x, y in zip(arr[::2], arr[1::2])]
+            for arr in anotations
         ]
     logger.debug(f"Time 2: {time.time() - start_time} seconds")
 
@@ -213,6 +214,7 @@ def write_frame(
         )
 
     zoom_frame = zoom_at(frame_with_bbox, 2, coord=(x, y))
+    zoom_frame = frame_with_bbox
     logger.debug(f"Time 3: {time.time() - start_time} seconds")
 
     # print(f"Frame {tracking_data.index}->>>>>", (x, y))
@@ -230,8 +232,15 @@ def draw_bounding_boxes(image, boxes, labels, color=(255, 0, 0), thickness=2):
     # for box, label in zip(boxes, labels):
     for box in boxes:
         # x1, y1, x2, y2 = box
-        left_upper, right_lower = box
-        cv2.rectangle(image, left_upper, right_lower, color, thickness)
+        if len(box) == 4:
+            # Reshape points in the format required by polylines
+            points = np.array(box).reshape((-1, 1, 2))
+
+            # Draw parallelogram
+            cv2.polylines(image, [points], True, (0, 255, 0), 2)
+        else:
+            left_upper, right_lower = box
+            cv2.rectangle(image, left_upper, right_lower, color, thickness)
         # cv2.putText(image, label, (x1, y1), cv2.FONT_HERSHEY_SIMPLEX, 1, color, 2)
     return image
 

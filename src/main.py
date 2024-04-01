@@ -200,8 +200,12 @@ def main(args):
         vid_props = extract_video_info(file_path)
 
         file_name_no_ext = os.path.splitext(file_name)[0]
+        game_name = os.path.basename(os.path.dirname(file_path))
         # dir_path = os.path.dirname(file_path)
         pickle_name = f"{folder_path}/tracking/tracking_data_{file_name_no_ext}.pkl"
+        logger.info(
+            f"Creating tracking data for {args.force_create_tracking} - {pickle_name}"
+        )
 
         if args.force_create_tracking or not os.path.exists(pickle_name):
             tracking_data = get_tracking_data(
@@ -273,6 +277,10 @@ def process_video(
     out_vid_len_frames = args.out_vid_len
     starting_point = args.start_frame
     os.makedirs(f"output/{game_name}", exist_ok=True)
+    # output_video_path = (
+    #     f"output/{game_name}/video_{file_name_no_ext}_{out_vid_len_frames}.mp4"
+    # )
+    os.makedirs(f"output/{game_name}", exist_ok=True)
     output_video_path = (
         f"output/{game_name}/video_{file_name_no_ext}_{out_vid_len_frames}.mp4"
     )
@@ -303,7 +311,7 @@ def process_video(
             tracking_data.Y[frame_index],
             track_data.logits,
             track_data.phrases,
-            draw_blind_spots=False,
+            draw_blind_spots=True,
             draw_tracking=False,
             write_history=False,
         )

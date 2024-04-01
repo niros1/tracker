@@ -146,11 +146,17 @@ class TrackinfVideoData(BaseModel):
 x_factor = -20
 y_factor = 100
 blind_spots: typing.List = [
-    [(489+x_factor, 707+y_factor), (630+x_factor, 820+y_factor)],
-    [(706+x_factor, 744+y_factor), (815+x_factor, 838+y_factor)],
-    [(1359+x_factor, 749+y_factor), (1491+x_factor, 836+y_factor)],
-    [(2006+x_factor, 770+y_factor), (2100+x_factor, 825+y_factor)],
-    [(2279+x_factor, 730+y_factor), (2415+x_factor, 806+y_factor)],
+    [
+        (0 + x_factor, 0 + y_factor),
+        (1000 + x_factor, 0 + y_factor),
+        (1000 + x_factor, 700 + y_factor),
+        (0 + x_factor, 950 + y_factor),
+    ],
+    [(489 + x_factor, 707 + y_factor), (630 + x_factor, 820 + y_factor)],
+    [(706 + x_factor, 744 + y_factor), (815 + x_factor, 838 + y_factor)],
+    [(1359 + x_factor, 749 + y_factor), (1491 + x_factor, 836 + y_factor)],
+    [(2006 + x_factor, 770 + y_factor), (2100 + x_factor, 825 + y_factor)],
+    [(2279 + x_factor, 730 + y_factor), (2415 + x_factor, 806 + y_factor)],
 ]
 
 
