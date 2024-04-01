@@ -82,11 +82,21 @@ def get_tracking_data(
             vid_data.all.append(
                 TrackingFrameData(
                     index=counter,
-                    source_index=previouse_state["counter"] if "counter" in previouse_state else counter,
-                    boxes=previouse_state["boxes"] if "boxes" in previouse_state else torch.Tensor([]),
-                    logits=previouse_state["logits"] if "logits" in previouse_state else torch.Tensor([]),
-                    phrases=previouse_state["phrases"] if "phrases" in previouse_state else [],
-                    cordinates=previouse_state["cordinates"] if "cordinates" in previouse_state else None,
+                    source_index=previouse_state["counter"]
+                    if "counter" in previouse_state
+                    else counter,
+                    boxes=previouse_state["boxes"]
+                    if "boxes" in previouse_state
+                    else torch.Tensor([]),
+                    logits=previouse_state["logits"]
+                    if "logits" in previouse_state
+                    else torch.Tensor([]),
+                    phrases=previouse_state["phrases"]
+                    if "phrases" in previouse_state
+                    else [],
+                    cordinates=previouse_state["cordinates"]
+                    if "cordinates" in previouse_state
+                    else None,
                 )
             )
             counter += 1
@@ -106,11 +116,21 @@ def get_tracking_data(
             vid_data.all.append(
                 TrackingFrameData(
                     index=counter,
-                    source_index=previouse_state["counter"] if "counter" in previouse_state else counter,
-                    boxes=previouse_state["boxes"] if "boxes" in previouse_state else torch.Tensor([]),
-                    logits=previouse_state["logits"] if "logits" in previouse_state else torch.Tensor([]),
-                    phrases=previouse_state["phrases"] if "phrases" in previouse_state else [],
-                    cordinates=previouse_state["cordinates"] if "cordinates" in previouse_state else None,
+                    source_index=previouse_state["counter"]
+                    if "counter" in previouse_state
+                    else counter,
+                    boxes=previouse_state["boxes"]
+                    if "boxes" in previouse_state
+                    else torch.Tensor([]),
+                    logits=previouse_state["logits"]
+                    if "logits" in previouse_state
+                    else torch.Tensor([]),
+                    phrases=previouse_state["phrases"]
+                    if "phrases" in previouse_state
+                    else [],
+                    cordinates=previouse_state["cordinates"]
+                    if "cordinates" in previouse_state
+                    else None,
                 )
             )
             counter += 1
@@ -191,7 +211,9 @@ def main(args):
 
         if args.create_video is True:
             tracking_data = pickle.load(open(pickle_name, "rb"))
-            process_video(args, file_path, model, vid_props, tracking_data, args.attach_sound)
+            process_video(
+                args, file_path, model, vid_props, tracking_data, args.attach_sound
+            )
 
 
 def load_gd_model():
@@ -213,7 +235,14 @@ def load_gd_model():
     return model
 
 
-def process_video(args, file_path, model, vid_props, tracking_data: TrackinfVideoData, attach_sound=False):
+def process_video(
+    args,
+    file_path,
+    model,
+    vid_props,
+    tracking_data: TrackinfVideoData,
+    attach_sound=False,
+):
     """Construct a new video with the tracking data
 
     Args:
@@ -226,6 +255,7 @@ def process_video(args, file_path, model, vid_props, tracking_data: TrackinfVide
     # vid_props = extract_video_info(file_path)
     # tracking_frames_limit = args.tracking_frames_limit
     file_name_no_ext = os.path.splitext(os.path.basename(file_path))[0]
+    game_name = os.path.basename(os.path.dirname(file_path))
     window_size = 300
 
     # Traking data manipulation
@@ -242,7 +272,10 @@ def process_video(args, file_path, model, vid_props, tracking_data: TrackinfVide
     # Create output video
     out_vid_len_frames = args.out_vid_len
     starting_point = args.start_frame
-    output_video_path = f"output/video_{file_name_no_ext}_{out_vid_len_frames}.mp4"
+    os.makedirs(f"output/{game_name}", exist_ok=True)
+    output_video_path = (
+        f"output/{game_name}/video_{file_name_no_ext}_{out_vid_len_frames}.mp4"
+    )
     output_video_path_aud = (
         f"output/video_{file_name_no_ext}_{out_vid_len_frames}_aud.mp4"
     )
@@ -284,7 +317,9 @@ def process_video(args, file_path, model, vid_props, tracking_data: TrackinfVide
     output_video.release()
 
     if attach_sound:
-        output_video_path_aud = attach_audio_to_video(file_path, output_video_path, file_name_no_ext)
+        output_video_path_aud = attach_audio_to_video(
+            file_path, output_video_path, file_name_no_ext
+        )
 
         # extract_audio_from_frames(file_path, starting_point, out_vid_len_frames)
         # attach_audio(file_path, output_video_path, output_video_path_aud)
@@ -292,14 +327,18 @@ def process_video(args, file_path, model, vid_props, tracking_data: TrackinfVide
 
 def attach_audio_to_video(audio_vid_path, destinamtion_video_path, aac_file_name):
     import subprocess
+
     print(f"Attaching audio to {destinamtion_video_path}")
-    command = f"ffmpeg -y -i {audio_vid_path} -vn -acodec copy output/{aac_file_name}.aac"
+    command = (
+        f"ffmpeg -y -i {audio_vid_path} -vn -acodec copy output/{aac_file_name}.aac"
+    )
     subprocess.run(command, shell=True, check=True)
     output_video_path_aud = destinamtion_video_path.replace(".mp4", "_aud.mp4")
     command = f"ffmpeg -y -i {destinamtion_video_path} -i output/{aac_file_name}.aac -c:v copy -c:a aac {output_video_path_aud}"
     subprocess.run(command, shell=True, check=True)
     print(f"Audio attached to {output_video_path_aud}")
     return output_video_path_aud
+
 
 def plot_smoothing_curve(tracking_data, file_name_no_ext, X, Y):
     size = 5000
@@ -364,7 +403,6 @@ def set_args():
             True,
         ),
     )
-    
 
     parser.add_argument(
         "--process-folder",
@@ -377,7 +415,7 @@ def set_args():
 
     parser.add_argument(
         "--process-file",
-        nargs='*',
+        nargs="*",
         default=os.getenv(
             "PROCESSES_FILE",
             "",
@@ -416,6 +454,7 @@ def set_args():
 
     args = parser.parse_args()
     return args
+
 
 # %%
 if __name__ == "__main__":
