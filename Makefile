@@ -4,16 +4,16 @@ run_create_video:
 	python src/main.py \
 	--create-video \
 	--attach-sound \
-	--out-vid-len 0 \
+	--out-vid-len 10 \
 	--start-frame 0 \
-	--process-folder /tmp/natanya \
-	--process-file GX011638.MP4 GX011639.MP4 GX011640.MP4 GX011641.MP4 GX011642.MP4 GX011643.MP4 GX011644.MP4 GX011645.MP4
-	
+	--process-folder output \
+	--process-file GX011620.MP4
 
 
 
 
-# GX011644, 41, 
+
+# GX011644, 41,
 
 run_create_tracking:
 	export PYTHONPATH=/home/ubuntu/tracker/tracker:$PYTHONPATH && \
