@@ -180,6 +180,8 @@ def main(args):
         vid_props = extract_video_info(file_path)
 
         file_name_no_ext = os.path.splitext(file_name)[0]
+        os.makedirs(f"{folder_path}/tracking", exist_ok=True)
+
         # dir_path = os.path.dirname(file_path)
         pickle_name = f"{folder_path}/tracking/tracking_data_{file_name_no_ext}.pkl"
 
