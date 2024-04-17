@@ -9,7 +9,7 @@ run_create_video:
 	python src/main.py \
 	--create-video \
 	--attach-sound \
-	--out-vid-len 0 \
+	--out-vid-len 10 \
 	--start-frame 0 \
 	--process-folder /tmp/natanya \
 	--process-file GX011658.MP4 GX011659.MP4 GX011660.MP4 GX011661.MP4 GX011662.MP4 GX011663.MP4 GX011665.MP4 GX011666.MP4 GX011667.MP4 GX011668.MP4 GX011669.MP4 GX011670.MP4
