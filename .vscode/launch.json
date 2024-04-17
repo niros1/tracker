@@ -9,12 +9,23 @@
             "type": "debugpy",
             "request": "launch",
             "program": "${file}",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Python Debugger: Current File",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
             "args": [
+                "--process-folder",
+                "output",
                 "--process-file",
-                "/Users/niro/dev/github/tracker/input/GX011620.MP4",
+                "GX011669.MP4",
                 "--create-video",
                 "--out-vid-len",
-                "10000"
+                "100",
+                "--start-frame",
+                "0"
             ],
             "console": "integratedTerminal"
         }

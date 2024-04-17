@@ -46,10 +46,10 @@ class TrackingFrameData(BaseModel):
     index: int
     source_index: int
     boxes: torch.Tensor  # Bounding boxes returned from gdino
-    logits: torch.Tensor
-    phrases: typing.List[str]
+    logits: torch.Tensor  # probebility
+    phrases: typing.List[str]  # Labels
     cordinates: typing.Optional[numpy.ndarray] = (
-        None  # Real frame cordinates, respected to the frame size. based on boxes
+        None  # Calculated frame cordinates, respected to the frame size. based on boxes
     )
 
     top_score_index_mem: int = -1
@@ -143,20 +143,26 @@ class TrackinfVideoData(BaseModel):
     Y: numpy.ndarray = None  # X smoothed cordinates
 
 
-x_factor = -20
-y_factor = 100
+x_factor = 0
+y_factor = 0
 blind_spots: typing.List = [
     [
         (0 + x_factor, 0 + y_factor),
-        (1000 + x_factor, 0 + y_factor),
-        (1000 + x_factor, 700 + y_factor),
+        (850 + x_factor, 0 + y_factor),
+        (850 + x_factor, 800 + y_factor),
         (0 + x_factor, 950 + y_factor),
     ],
-    [(489 + x_factor, 707 + y_factor), (630 + x_factor, 820 + y_factor)],
-    [(706 + x_factor, 744 + y_factor), (815 + x_factor, 838 + y_factor)],
-    [(1359 + x_factor, 749 + y_factor), (1491 + x_factor, 836 + y_factor)],
-    [(2006 + x_factor, 770 + y_factor), (2100 + x_factor, 825 + y_factor)],
-    [(2279 + x_factor, 730 + y_factor), (2415 + x_factor, 806 + y_factor)],
+    [
+        (800 + x_factor, 0 + y_factor),
+        (2500 + x_factor, 0 + y_factor),
+        (2500 + x_factor, 900 + y_factor),
+        (800 + x_factor, 900 + y_factor),
+    ],
+    # [(489 + x_factor, 707 + y_factor), (630 + x_factor, 820 + y_factor)],
+    # [(706 + x_factor, 744 + y_factor), (815 + x_factor, 838 + y_factor)],
+    # [(1359 + x_factor, 749 + y_factor), (1491 + x_factor, 836 + y_factor)],
+    # [(2006 + x_factor, 770 + y_factor), (2100 + x_factor, 825 + y_factor)],
+    # [(2279 + x_factor, 730 + y_factor), (2415 + x_factor, 806 + y_factor)],
 ]
 
 

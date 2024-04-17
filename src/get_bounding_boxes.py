@@ -23,7 +23,7 @@ def reduce_image_resolution(image, scale_percent=50):
 
 
 image_name = "frame9"
-img_path = f"output/frames/{image_name}.jpg"
+img_path = "/Users/niro/dev/github/tracker/output/frames/frame0_0.jpg"
 # zoomed_img_path = f"/home/ubuntu/tracker/tracker/output/frames/{image_name}_zoom.jpg"
 # Load an image
 org_image = cv2.imread(img_path)

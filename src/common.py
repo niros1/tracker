@@ -182,9 +182,10 @@ def write_frame(
     y,
     logits,
     phrases,
-    draw_blind_spots=True,
-    draw_tracking=True,
-    write_history=True,
+    draw_blind_spots=False,
+    draw_tracking=False,
+    write_history=False,
+    should_zoom=False,
 ):
     start_time = time.time()  # Start timing
 
@@ -196,7 +197,10 @@ def write_frame(
 
     if draw_blind_spots:
         frame_with_bbox = draw_bounding_boxes(
-            source_frame, blind_spots, tracking_data.phrases
+            source_frame,
+            blind_spots,
+            ["Blind Spot"] * len(blind_spots),
+            color=(0, 0, 255),
         )
 
     anotations = tracking_data.cordinates
@@ -210,12 +214,13 @@ def write_frame(
     # Tracking bounding boxes
     if draw_tracking and anotations is not None:
         frame_with_bbox = draw_bounding_boxes(
-            frame_with_bbox, anotations, tracking_data.phrases, color=(0, 255, 0)
+            frame_with_bbox, anotations, tracking_data.phrases, color=(255, 255, 0)
         )
-
-    zoom_frame = zoom_at(frame_with_bbox, 2, coord=(x, y))
-    zoom_frame = frame_with_bbox
-    logger.debug(f"Time 3: {time.time() - start_time} seconds")
+    if should_zoom:
+        zoom_frame = zoom_at(frame_with_bbox, 2, coord=(x, y))
+        logger.debug(f"Time 3: {time.time() - start_time} seconds")
+    else:
+        zoom_frame = frame_with_bbox
 
     # print(f"Frame {tracking_data.index}->>>>>", (x, y))
     if write_history:
@@ -230,18 +235,40 @@ def draw_bounding_boxes(image, boxes, labels, color=(255, 0, 0), thickness=2):
     Draw bounding boxes on an image.
     """
     # for box, label in zip(boxes, labels):
-    for box in boxes:
+    for index, box in enumerate(boxes):
         # x1, y1, x2, y2 = box
-        if len(box) == 4:
+        if len(box) == 4:  # Rectangle
             # Reshape points in the format required by polylines
             points = np.array(box).reshape((-1, 1, 2))
-
+            right_upper, left_lower = (box[1], box[3])
             # Draw parallelogram
-            cv2.polylines(image, [points], True, (0, 255, 0), 2)
-        else:
-            left_upper, right_lower = box
-            cv2.rectangle(image, left_upper, right_lower, color, thickness)
+            cv2.polylines(image, [points], True, color, 2)
+        else:  # Polygon (only two points)
+            left_lower, right_upper = box
+            cv2.rectangle(image, left_lower, right_upper, color, thickness)
+
+        # Calculate the position for the text
+        # We want it to be just below the bounding box
+        # logger.info(f"Labels: {labels}, {index}, {left_lower}, {right_upper}")
+
+        text_position = (
+            # left_lower[0] if left_lower[0] > 50 else right_upper[0] - 80,
+            left_lower[0],
+            left_lower[1] + 20,
+        )  # Adjust the value as needed
+        # logger.info(f"text_position: {labels}, {index}, {text_position}")
+        # Draw the text on the image
+        cv2.putText(
+            image,
+            f"{labels[index]} - {left_lower} - {right_upper}",
+            text_position,
+            cv2.FONT_HERSHEY_SIMPLEX,
+            1.5,
+            color,
+            thickness=3,
+        )
         # cv2.putText(image, label, (x1, y1), cv2.FONT_HERSHEY_SIMPLEX, 1, color, 2)
+
     return image
 
 

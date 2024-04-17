@@ -73,6 +73,8 @@ def get_tracking_data(
     # history = Stack(15)
     vid_data = TrackinfVideoData()
     for frame in tqdm(
+        # the reall inferance will be taken only one of every [accuracy] frames,
+        # to improve performance and avoid Gdino prediction for any frame
         frame_iterator,
         desc="get_tracking_data",
         total=frames_limit if frames_limit > 0 else None,
@@ -311,9 +313,10 @@ def process_video(
             tracking_data.Y[frame_index],
             track_data.logits,
             track_data.phrases,
-            draw_blind_spots=True,
-            draw_tracking=False,
+            draw_blind_spots=False,
+            draw_tracking=True,
             write_history=False,
+            should_zoom=False,
         )
         end_time = time.time()  # End timing
         elapsed_time = end_time - start_time  # Calculate elapsed time
@@ -406,10 +409,7 @@ def set_args():
     parser.add_argument(
         "--attach-sound",
         action="store_true",
-        default=os.getenv(
-            "ATTACH_SOUND",
-            True,
-        ),
+        default=False,
     )
 
     parser.add_argument(

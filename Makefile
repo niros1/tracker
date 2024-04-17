@@ -3,12 +3,12 @@ run_create_video:
 	export LOG_LEVEL=INFO && \
 	python src/main.py \
 	--create-video \
-	--attach-sound \
-	--out-vid-len 10 \
+	--out-vid-len 2000 \
 	--start-frame 0 \
 	--process-folder output \
-	--process-file GX011620.MP4
+	--process-file GX011669.MP4
 
+# --attach-sound \
 
 
 
