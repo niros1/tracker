@@ -73,6 +73,8 @@ def get_tracking_data(
     # history = Stack(15)
     vid_data = TrackinfVideoData()
     for frame in tqdm(
+        # the reall inferance will be taken only one of every [accuracy] frames,
+        # to improve performance and avoid Gdino prediction for any frame
         frame_iterator,
         desc="get_tracking_data",
         total=frames_limit if frames_limit > 0 else None,
@@ -200,9 +202,7 @@ def main(args):
         vid_props = extract_video_info(file_path)
 
         file_name_no_ext = os.path.splitext(file_name)[0]
-        os.makedirs(f"{folder_path}/tracking", exist_ok=True)
-
-        # game_name = os.path.basename(os.path.dirname(file_path))
+        game_name = os.path.basename(os.path.dirname(file_path))
         # dir_path = os.path.dirname(file_path)
         pickle_name = f"{folder_path}/tracking/tracking_data_{file_name_no_ext}.pkl"
         logger.info(
@@ -314,8 +314,9 @@ def process_video(
             track_data.logits,
             track_data.phrases,
             draw_blind_spots=True,
-            draw_tracking=False,
+            draw_tracking=True,
             write_history=False,
+            should_zoom=True,
         )
         end_time = time.time()  # End timing
         elapsed_time = end_time - start_time  # Calculate elapsed time
@@ -408,10 +409,7 @@ def set_args():
     parser.add_argument(
         "--attach-sound",
         action="store_true",
-        default=os.getenv(
-            "ATTACH_SOUND",
-            True,
-        ),
+        default=False,
     )
 
     parser.add_argument(
