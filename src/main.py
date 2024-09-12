@@ -313,10 +313,10 @@ def process_video(
             tracking_data.Y[frame_index],
             track_data.logits,
             track_data.phrases,
-            draw_blind_spots=False,
+            draw_blind_spots=True,
             draw_tracking=True,
             write_history=False,
-            should_zoom=False,
+            should_zoom=True,
         )
         end_time = time.time()  # End timing
         elapsed_time = end_time - start_time  # Calculate elapsed time

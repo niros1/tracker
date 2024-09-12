@@ -3,10 +3,10 @@ run_create_video:
 	export LOG_LEVEL=INFO && \
 	python src/main.py \
 	--create-video \
-	--out-vid-len 2000 \
-	--start-frame 0 \
+	--out-vid-len 3000 \
+	--start-frame 1500 \
 	--process-folder output \
-	--process-file GX011669.MP4
+	--process-file GX011690.MP4
 
 # --attach-sound \
 
@@ -28,6 +28,9 @@ download_videos:
 
 upload_tracking_data:
 	aws s3 cp output/natanya s3://niro-prv-assets/input/natanya/tracking --recursive
+
+download_tracking_data:
+	aws s3 sync s3://niro-prv-assets/input/neharot/hrzl_ramatsharon/tracking /tmp/neharot/hrzl_ramatsharon/tracking
 
 set_sound:
 	ffmpeg -i /tmp/natanya/GX011645.MP4 -vn -acodec copy output_audio.aac
